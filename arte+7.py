@@ -60,6 +60,10 @@ if __name__ == '__main__':
         usage(argv[0])
         exit(0)
 
+    if argv[1] == 'play':
+        print >>stderr, 'Error: <play> is not implemented yet. Use record and then your favorite player'
+        exit(1)
+
     url_page = argv[2]
     video_url, player_url = get_url(url_page)
     output_file = urlparse(url_page).path.split('/')[-1].replace('.html','.flv')
