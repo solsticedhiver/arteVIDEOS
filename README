@@ -1,12 +1,18 @@
 A script to play/record video from Arte+7 catch-up TV site
 
-Usage: ./arte+7.py url|play|record URL
+Usage: arte+7.py url|play|record [OPTIONS] URL
 Play arte+7 videos without a mandatory browser or even record them. 
 You will need however to pass the url of the webpage presenting the video.
 They all begin with http://videos.arte.tv/fr/videos/{...}
     url     just show the real url of the video
-    play    play the video directly
-    record  record the video to a file 
+    play    play the video directly (NOT IMPLEMENTED)
+    record  record the video to a file
+
+Options:
+  -h, --help            show this help message and exit
+  -l LANG, --lang=LANG  language of the video fr or de (default: fr)
+  -q QUALITY, --quality=QUALITY
+                        quality of the video sd or hd (default: hd)
 
 REQUIREMENTS
 
