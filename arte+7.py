@@ -4,7 +4,7 @@ from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
 from urllib2 import urlopen, URLError
 from urllib import unquote
 from urlparse import urlparse
-from subprocess import call as subprocess_call
+from subprocess import Popen, PIPE
 from os.path import exists as os_path_exists
 from os import environ as os_environ
 from sys import exit, argv, stderr
@@ -14,6 +14,11 @@ from cmd import Cmd
 VERSION = '0.2'
 DEFAULT_LANG = 'fr'
 DEFAULT_QUALITY = 'hd'
+# You could add your favorite player at the beginning of the PLAYERS tuple
+# Then, you need to add the command line in play function below.
+# Hint: look for FLAG_PLAYER tag
+PLAYERS = ('mplayer', 'vlc', 'xine', 'totem')
+
 CLSID = 'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000'
 SEARCH_URL = 'http://videos.arte.tv/%s/do_search/videos/%s?q='
 SEARCH_LANG = {'fr': 'recherche', 'de':'suche', 'en': 'search'}
@@ -182,14 +187,23 @@ class MyCmd(Cmd):
         except ArgError:
             print 'Error: no video with this number'
 
+    def do_player_url(self, arg):
+        '''player_url NUMBER
+    show the Flash player url of the chosen video'''
+        try:
+            url_page = self.process_num(arg)
+            print get_rtmp_url(url_page)[1]
+        except ValueError:
+            print 'Error: wrong argument (must be an integer)'
+        except ArgError:
+            print 'Error: no video with this number'
+
     def do_play(self, arg):
         '''play NUMBER
     play the chosen video'''
         try:
             url_page = self.process_num(arg)
-            #video_url = get_rtmp_url(url_page)[0]
-            video_url = None
-            play(video_url)
+            play(url_page, self.options)
         except ValueError:
             print 'Error: wrong argument (must be an integer)'
         except ArgError:
@@ -241,7 +255,7 @@ class MyCmd(Cmd):
                 ch = [int(i)-1 for i in arg.split(' ')]
                 for i in ch:
                     if i<0 or i>=len(CHANNELS):
-                        print >> stderr, 'Error: argument out of range.'
+                        print >> stderr, 'Error: unknown channel #%d.' % (i+1)
                         return
                 videos = channel(ch, self.options.lang)
                 print_results(videos)
@@ -260,7 +274,7 @@ class MyCmd(Cmd):
                 pr = [int(i)-1 for i in arg.split(' ')]
                 for i in pr:
                     if i<0 or i>=len(PROGRAMS):
-                        print >> stderr, 'Error: argument out of range.'
+                        print >> stderr, 'Error: unknown program #%d.' % (i+1)
                         return
                 videos = program(pr, self.options.lang)
                 print_results(videos)
@@ -273,7 +287,7 @@ class MyCmd(Cmd):
         if arg == '':
             print '''COMMANDS:
     url NUMBER      show real url of video
-    play NUMBER     play chosen video (NOT IMPLEMENTED YET)
+    play NUMBER     play chosen video
     record NUMBER   download and save video to a local file
     search STRING   search for a video
     lang [fr|de|en] display or switch to a different language
@@ -298,7 +312,7 @@ class MyCmd(Cmd):
         return True
 
     def default(self, arg):
-        print 'Error: don\'t know how to %s' % arg
+        print >> stderr, 'Error: don\'t know how to %s' % arg
 
     def emptyline(self):
         pass
@@ -389,30 +403,66 @@ def print_results(results, verbose=True):
         if verbose:
             print '    '+r.find('p', {'class': 'teaserText'}).string
 
-def play(video_url):
-    print >> stderr, 'Error: <play> is not implemented yet. Use record and then your favorite player'
+def play(url_page, options):
+    cmd_args = make_cmd_args(url_page, options, streaming=True)
+    player = find_player(PLAYERS)
+
+    if player is not None:
+        if player == 'totem':
+            player_cmd = 'totem fd://0'
+        elif player == 'mplayer':
+            player_cmd = 'mplayer -'
+        elif player == 'vlc':
+            player_cmd = 'vlc -'
+        elif player == 'xine':
+            player_cmd = 'xine stdin:/'
+        # FLAG_PLAYER: add your player here and uncomment the lines
+        #elif player == 'foo':
+        #    player_cmd = 'foo [option to read from stdin]'
+
+        p1 = Popen(['rtmpdump'] + cmd_args.split(' '), stdout=PIPE)
+        p2 = Popen(player_cmd.split(' '), stdin=p1.stdout)
+    else:
+        print >> stderr, 'Error: no player has been found.'
 
 def record(url_page, options):
-    video_url, player_url = get_rtmp_url(url_page, quality=options.quality, lang=options.lang)
-    output_file = urlparse(url_page).path.split('/')[-1].replace('.html','.flv')
+    cmd_args = make_cmd_args(url_page, options)
+    Popen(['rtmpdump'] + cmd_args.split(' '))
+
+def make_cmd_args(url_page, options, streaming=False):
     if not find_in_path(os_environ['PATH'], 'rtmpdump'):
         print >> stderr, 'Error: rtmpdump has not been found'
         exit(1)
-    cmd_args = '-r %s --swfVfy %s --flv %s' % (video_url, player_url, output_file)
+
+    video_url, player_url = get_rtmp_url(url_page, quality=options.quality, lang=options.lang)
+    output_file = None
+    if not streaming:
+        output_file = urlparse(url_page).path.split('/')[-1].replace('.html','.flv')
+        cmd_args = '-r %s --swfVfy %s --flv %s' % (video_url, player_url, output_file)
+    else:
+        cmd_args = '-r %s --swfVfy %s' % (video_url, player_url)
     if options.quiet:
         cmd_args += ' --quiet'
-    if os_path_exists(output_file):
+
+    if not streaming and os_path_exists(output_file):
         # try to resume a download
         cmd_args += ' --resume'
         print ':: Resuming download of %s' % output_file
     else:
         print ':: Downloading and saving to %s' % output_file
 
-    subprocess_call(['rtmpdump'] + cmd_args.split(' '))
+    return cmd_args
+
+def find_player(L):
+    for p in L:
+        if find_in_path(os_environ['PATH'], p):
+            return p
+    return None
 
 def main():
     usage = '''Usage: %prog url|play|record [OPTIONS] URL
        %prog search [OPTIONS] STRING...
+       %prog
 
 Play or record arte+7 videos without a mandatory browser.
 
@@ -422,15 +472,11 @@ or use the search command to get a list of videos
 
 COMMANDS
     url     show the real url of the video
-    play    play the video directly (NOT IMPLEMENTED YET)
+    play    play the video directly
     record  save the video into a local file
     search  search for a video on arte+7
             It will display a numbered list of results and enter
-            a simple command line interpreter that has the same 4 commands:
-                url NUMBER
-                play NUMBER (NOT IMPLEMENTED YET)
-                record NUMBER
-                search STRING'''
+            a simple command line interpreter'''
 
     parser = OptionParser(usage=usage)
     parser.add_option('-l', '--lang', dest='lang', type='string', default=DEFAULT_LANG,
@@ -444,7 +490,7 @@ COMMANDS
 
     if options.lang not in ('fr', 'de', 'en'):
         die('Invalid option')
-    if options.quality not in ('sd', 'hd'): # what is EQ ?
+    if options.quality not in ('sd', 'hd'):
         die('Invalid option')
     if len(args) < 2:
         MyCmd([], options).cmdloop()
