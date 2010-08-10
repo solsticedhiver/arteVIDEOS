@@ -84,11 +84,19 @@ class MyCmd(Cmd):
 
     def do_lang(self, arg):
         '''lang [fr|de|en]
-    switch to a different language'''
+    display or switch to a different language'''
         if arg == '':
             print self.options.lang
         elif arg in ('fr' ,'de', 'en'):
             self.options.lang = arg
+
+    def do_quality(self, arg):
+        '''quality [sd|hd]
+    display or switch to a different quality'''
+        if arg == '':
+            print self.options.quality
+        elif arg in ('sd', 'hd'):
+            self.options.quality = arg
 
     def do_help(self, arg):
         '''print the help'''
@@ -98,7 +106,8 @@ class MyCmd(Cmd):
     play NUMBER     play chosen video (NOT IMPLEMENTED YET)
     record NUMBER   download and save video to a local file
     search STRING   search for a video
-    lang [fr|de|en] switch to a different language
+    lang [fr|de|en] display or switch to a different language
+    quality [sd|hd] display or switch to a different video quality
     help            show this help
     quit            quit the cli
     exit            exit the cli'''
