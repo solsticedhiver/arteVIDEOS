@@ -230,8 +230,8 @@ class MyCmd(Cmd):
         elif arg in ('sd', 'hd'):
             self.options.quality = arg
 
-    def do_channels(self, arg):
-        '''channels [NUMBER] ...
+    def do_channel(self, arg):
+        '''channel [NUMBER] ...
     display available channels or search video for given channel(s)'''
         if arg == '':
             for c,n in CHANNELS_LANG[self.options.lang]:
@@ -243,14 +243,14 @@ class MyCmd(Cmd):
                     if i<0 or i>=len(CHANNELS):
                         print >> stderr, 'Error: argument out of range.'
                         return
-                videos = channels(ch, self.options.lang)
+                videos = channel(ch, self.options.lang)
                 print_results(videos)
                 self.videos = videos
             except ValueError:
                 print >> stderr, 'Error: wrong argument; must be an integer'
 
-    def do_programs(self, arg):
-        '''programs [NUMBER] ...
+    def do_program(self, arg):
+        '''program [NUMBER] ...
     display available programs or search video for given program(s)'''
         if arg == '':
             for c,n in PROGRAMS_LANG[self.options.lang]:
@@ -262,7 +262,7 @@ class MyCmd(Cmd):
                     if i<0 or i>=len(PROGRAMS):
                         print >> stderr, 'Error: argument out of range.'
                         return
-                videos = programs(pr, self.options.lang)
+                videos = program(pr, self.options.lang)
                 print_results(videos)
                 self.videos = videos
             except ValueError:
@@ -278,8 +278,8 @@ class MyCmd(Cmd):
     search STRING   search for a video
     lang [fr|de|en] display or switch to a different language
     quality [sd|hd] display or switch to a different video quality
-    channels [NUMBER] display available channels or search video for given channel(s)
-    programs [NUMBER] display available programs or search video for given program(s)
+    channel [NUMBER] display available channels or search video for given channel(s)
+    program [NUMBER] display available programs or search video for given program(s)
     help            show this help
     quit            quit the cli
     exit            exit the cli'''
@@ -299,6 +299,9 @@ class MyCmd(Cmd):
 
     def default(self, arg):
         print 'Error: don\'t know how to %s' % arg
+
+    def emptyline(self):
+        pass
 
 def die(msg):
     print >> stderr, 'Error: %s. See %s --help' % (msg, argv[0])
@@ -348,7 +351,7 @@ def find_in_path(path, filename):
             return True
     return False
 
-def channels(ch, lang):
+def channel(ch, lang):
     try:
         url = (FILTER_URL % (lang, lang)) + 'channel-'+','.join('%d' % CHANNELS[i] for i in ch)  + '-program-'
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
@@ -358,7 +361,7 @@ def channels(ch, lang):
         die("Can't complete the requested search")
     return None
 
-def programs(pr, lang):
+def program(pr, lang):
     try:
         url = (FILTER_URL % (lang, lang)) + 'channel-' + '-program-'+','.join('%d' % PROGRAMS[i] for i in pr) 
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
