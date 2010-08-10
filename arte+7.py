@@ -1,13 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf8 -*-
-from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
+from sys import exit, argv, stderr
+try:
+    from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
+except ImportError:
+    print >> stderr, 'Error: you need BeautifulSoup python module'
+    exit(1)
 from urllib2 import urlopen, URLError
 from urllib import unquote
 from urlparse import urlparse
 from subprocess import Popen, PIPE
 from os.path import exists as os_path_exists
 from os import environ as os_environ
-from sys import exit, argv, stderr
 from optparse import OptionParser
 from cmd import Cmd
 
