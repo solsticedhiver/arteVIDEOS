@@ -8,7 +8,6 @@ from os.path import exists as os_path_exists
 from os import environ as os_environ
 from sys import exit, argv, stderr
 from optparse import OptionParser
-#from tempfile import mkstemp
 from cmd import Cmd
 
 VERSION = '0.2'
@@ -83,6 +82,14 @@ class MyCmd(Cmd):
             print_results(results)
             self.videos = results
 
+    def do_lang(self, arg):
+        '''lang [fr|de|en]
+    switch to a different language'''
+        if arg == '':
+            print self.options.lang
+        elif arg in ('fr' ,'de', 'en'):
+            self.options.lang = arg
+
     def do_help(self, arg):
         '''print the help'''
         if arg == '':
@@ -91,6 +98,7 @@ class MyCmd(Cmd):
     play NUMBER     play chosen video (NOT IMPLEMENTED YET)
     record NUMBER   download and save video to a local file
     search STRING   search for a video
+    lang [fr|de|en] switch to a different language
     help            show this help
     quit            quit the cli
     exit            exit the cli'''
@@ -132,9 +140,19 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
         xml_url = unquote(movie_url['value'].split('videorefFileUrl=')[-1])
         soup = BeautifulStoneSoup(urlopen(xml_url).read())
         # second xml file
-        xml_url = soup.find('video', {'lang': lang})['ref']
-        if xml_url is None:
-            raise 'The language %s is not available for this video' % lang
+        videos_list = soup.findAll('video')
+        videos = {}
+        for v in videos_list:
+            videos[v['lang']] = v['ref']
+        if lang not in videos:
+            print >> stderr, 'The video in not available in the language %s.  using the default one' % lang
+            if DEFAULT_LANG in videos:
+                xml_url = videos[DEFAULT_LANG]
+            else:
+                xml_url = videos[0]
+        else:
+            xml_url = videos[lang]
+
         soup = BeautifulStoneSoup(urlopen(xml_url).read())
         # at last the video url
         video_url = soup.urls.find('url', {'quality': quality}).string
@@ -154,12 +172,6 @@ def search(s, lang):
         url = (SEARCH_URL % (lang, SEARCH_LANG[lang])) + s.replace(' ', '+')
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
         videos = soup.findAll('div', {'class': 'video'})
-
-        #handle, tmpname = mkstemp(prefix='arte+7-', suffix='.txt')
-        #tmp = open(tmpname, 'w')
-        #tmp.write('\n'.join('http://videos.arte.tv'+v.find('h2').a['href'] for v in videos))
-        #tmp.close()
-
         return videos
     except URLError:
         die("Can't complete the requested search")
