@@ -17,7 +17,7 @@ DEFAULT_QUALITY = 'hd'
 CLSID = 'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000'
 SEARCH_URL = 'http://videos.arte.tv/%s/do_search/videos/%s?q='
 SEARCH_LANG = {'fr': 'recherche', 'de':'suche', 'en': 'search'}
-CHANNELS_URL = 'http://videos.arte.tv/%s/videos/arte7#/%s/thumb///1/100/'
+FILTER_URL = 'http://videos.arte.tv/%s/do_delegate/videos/arte7/index-3211552,view,asThumbnail.html?hash=%s/thumb///1/50/'
 CHANNELS = (
         3188640, # Arts & Culture (0)
         3188644, # Discovery (1)
@@ -70,6 +70,84 @@ CHANNELS_LANG = {'fr': (
             )
         }
 
+PROGRAMS = (
+        3188704,    # 360° - GEO Report (0)
+        3188708,    # ARTE Journal (1)
+        3219086,    # ARTE Lounge (2)
+        3188710,    # ARTE Reportage (3)
+        3188720,    # Arts & artists (4)
+        3199714,    # Cut up (5)
+        3199710,    # Giordano meets .. (6)
+        3188722,    # History on Wednesday (7)
+        3224652,    # Karambolage (8)
+        3188724,    # Metropolis (9)
+        3188728,    # Philosophy (10)
+        3188712,    # Short Circuit (11)
+        3193602,    # The blogger (12)
+        3188716,    # The Night / La Nuit (13)
+        3188628,    # Tracks (14)
+        3188730,    # X:enius (15)
+        3188732)    # Yourope (16)
+
+PROGRAMS_LANG = {
+            'fr': (
+            ('360° - GEO'                  , 0),
+            ('ARTE Journal'                , 1),
+            ('ARTE Lounge'                 , 2),
+            ('ARTE Reportage'              , 3),
+            ('Court-Circuit'               , 11),
+            ('Cut up'                      , 5),
+            ('Die Nacht/La nuit'           , 13),
+            ('Giordano hebdo'              , 6),
+            ('Karambolage'                 , 8),
+            ('L\'Art et la Manière'        , 4),
+            ('Le Blogueur'                 , 12),
+            ('Les mercredis de l\'histoire', 7),
+            ('Metropolis'                  , 9),
+            ('Philosophie'                 , 10),
+            ('Tracks'                      , 14),
+            ('X:enius'                     , 15),
+            ('Yourope'                     , 16),
+            ),
+            'de': (
+            ('360° - GEO-Reportage'  , 0),
+            ('ARTE Journal'          , 1),
+            ('ARTE Lounge'           , 2),
+            ('ARTE Reportage'        , 3),
+            ('Cut up'                , 5),
+            ('Der Blogger'           , 12),
+            ('Geschichte am Mittwoch', 7),
+            ('Giordano trifft ... '  , 6),
+            ('Karambolage'           , 8),
+            ('Künstler hautnah'      , 4),
+            ('Kurzschluss'           , 11),
+            ('La nuit/Die Nacht'     , 13),
+            ('Metropolis'            , 9),
+            ('Philosophie'           , 10),
+            ('Tracks'                , 14),
+            ('X:enius'               , 15),
+            ('Yourope'               , 16),
+            ),
+            'en': (
+            ('360° - GEO Report'   , 0),
+            ('ARTE Journal'        , 1),
+            ('ARTE Lounge'         , 2),
+            ('ARTE Reportage'      , 3),
+            ('Arts & artists'      , 4),
+            ('Cut up'              , 5),
+            ('Giordano meets ..'   , 6),
+            ('History on Wednesday', 7),
+            ('Karambolage'         , 8),
+            ('Metropolis'          , 9),
+            ('Philosophy'          , 10),
+            ('Short Circuit'       , 11),
+            ('The blogger'         , 12),
+            ('The Night / La Nuit' , 13),
+            ('Tracks'              , 14),
+            ('X:enius'             , 15),
+            ('Yourope'             , 16),
+            )
+            }
 
 BOLD   = '[1m'
 NC     = '[0m'    # no color
@@ -165,7 +243,28 @@ class MyCmd(Cmd):
                     if i<0 or i>=len(CHANNELS):
                         print >> stderr, 'Error: argument out of range.'
                         return
-                print_results(channels(ch, self.options.lang))
+                videos = channels(ch, self.options.lang)
+                print_results(videos)
+                self.videos = videos
+            except ValueError:
+                print >> stderr, 'Error: wrong argument; must be an integer'
+
+    def do_programs(self, arg):
+        '''programs [NUMBER] ...
+    display available programs or search video for given program(s)'''
+        if arg == '':
+            for c,n in PROGRAMS_LANG[self.options.lang]:
+                print '(%d) %s' % (n+1, c)
+        else:
+            try:
+                pr = [int(i)-1 for i in arg.split(' ')]
+                for i in pr:
+                    if i<0 or i>=len(PROGRAMS):
+                        print >> stderr, 'Error: argument out of range.'
+                        return
+                videos = programs(pr, self.options.lang)
+                print_results(videos)
+                self.videos = videos
             except ValueError:
                 print >> stderr, 'Error: wrong argument; must be an integer'
 
@@ -180,6 +279,7 @@ class MyCmd(Cmd):
     lang [fr|de|en] display or switch to a different language
     quality [sd|hd] display or switch to a different video quality
     channels [NUMBER] display available channels or search video for given channel(s)
+    programs [NUMBER] display available programs or search video for given program(s)
     help            show this help
     quit            quit the cli
     exit            exit the cli'''
@@ -250,7 +350,17 @@ def find_in_path(path, filename):
 
 def channels(ch, lang):
     try:
-        url = (CHANNELS_URL % (lang, lang)) + 'channels-'+','.join('%d' % CHANNELS[i] for i in ch)  + '-program-'
+        url = (FILTER_URL % (lang, lang)) + 'channel-'+','.join('%d' % CHANNELS[i] for i in ch)  + '-program-'
+        soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
+        videos = soup.findAll('div', {'class': 'video'})
+        return videos
+    except URLError:
+        die("Can't complete the requested search")
+    return None
+
+def programs(pr, lang):
+    try:
+        url = (FILTER_URL % (lang, lang)) + 'channel-' + '-program-'+','.join('%d' % PROGRAMS[i] for i in pr) 
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
         videos = soup.findAll('div', {'class': 'video'})
         return videos
