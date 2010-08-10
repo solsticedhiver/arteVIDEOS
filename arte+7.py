@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf8 -*-
 from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
 from urllib2 import urlopen, URLError
 from urllib import unquote
@@ -16,6 +17,59 @@ DEFAULT_QUALITY = 'hd'
 CLSID = 'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000'
 SEARCH_URL = 'http://videos.arte.tv/%s/do_search/videos/%s?q='
 SEARCH_LANG = {'fr': 'recherche', 'de':'suche', 'en': 'search'}
+CHANNELS_URL = 'http://videos.arte.tv/%s/videos/arte7#/%s/thumb///1/100/'
+CHANNELS = (
+        3188640, # Arts & Culture (0)
+        3188644, # Discovery (1)
+        3188646, # Documentary (2)
+        3188642, # Drama & Cinema (3)
+        3188650, # Environment & Science (4)
+        3188648, # Europe (5)
+        3188654, # Geopolitics & History (6)
+        3188656, # Kids & Family (7)
+        3188636, # News (8)
+        3188638, # Pop Culture & Music (9)
+        3188652, # Society (10)
+        )
+CHANNELS_LANG = {'fr': (
+            ('Actualités'               , 8),
+            ('Art & Culture'            , 0),
+            ('Cinéma & Fiction'         , 3),
+            ('Culture Pop & Alternative', 9),
+            ('Découverte'               , 1),
+            ('Documentaire'             , 2),
+            ('Environnement & Sciences' , 4),
+            ('Europe'                   , 5),
+            ('Géopolitique & Histoire'  , 6),
+            ('Junior'                   , 7),
+            ('Société'                  , 10)
+            ), 'de': (
+            ('Aktuelles'               , 8),
+            ('Dokumentationen'         , 2),
+            ('Entdeckung'              , 1),
+            ('Europa'                  , 5),
+            ('Geopolitik & Geschichte' , 6),
+            ('Gesellschaft'            , 10),
+            ('Junior'                  , 7),
+            ('Kino & Serien'           , 3),
+            ('Kunst & Kultur'          , 0),
+            ('Popkultur & Musik'       , 9),
+            ('Umwelt & Wissenschaft'   , 4)
+            ), 'en':(
+            ('Arts & Culture'         , 0),
+            ('Discovery'              , 1),
+            ('Documentary'            , 2),
+            ('Drama & Cinema'         , 3),
+            ('Environment & Science'  , 4),
+            ('Europe'                 , 5),
+            ('Geopolitics & History'  , 6),
+            ('Kids & Family'          , 7),
+            ('News'                   , 8),
+            ('Pop Culture & Music'    , 9),
+            ('Society'                , 10)
+            )
+        }
+
 
 BOLD   = '[1m'
 NC     = '[0m'    # no color
@@ -98,6 +152,23 @@ class MyCmd(Cmd):
         elif arg in ('sd', 'hd'):
             self.options.quality = arg
 
+    def do_channels(self, arg):
+        '''channels [NUMBER] ...
+    display available channels or search video for given channel(s)'''
+        if arg == '':
+            for c,n in CHANNELS_LANG[self.options.lang]:
+                print '(%d) %s' % (n+1, c)
+        else:
+            try:
+                ch = [int(i)-1 for i in arg.split(' ')]
+                for i in ch:
+                    if i<0 or i>=len(CHANNELS):
+                        print >> stderr, 'Error: argument out of range.'
+                        return
+                print_results(channels(ch, self.options.lang))
+            except ValueError:
+                print >> stderr, 'Error: wrong argument; must be an integer'
+
     def do_help(self, arg):
         '''print the help'''
         if arg == '':
@@ -108,6 +179,7 @@ class MyCmd(Cmd):
     search STRING   search for a video
     lang [fr|de|en] display or switch to a different language
     quality [sd|hd] display or switch to a different video quality
+    channels [NUMBER] display available channels or search video for given channel(s)
     help            show this help
     quit            quit the cli
     exit            exit the cli'''
@@ -175,6 +247,16 @@ def find_in_path(path, filename):
         if os_path_exists('/'.join([i, filename])):
             return True
     return False
+
+def channels(ch, lang):
+    try:
+        url = (CHANNELS_URL % (lang, lang)) + 'channels-'+','.join('%d' % CHANNELS[i] for i in ch)  + '-program-'
+        soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
+        videos = soup.findAll('div', {'class': 'video'})
+        return videos
+    except URLError:
+        die("Can't complete the requested search")
+    return None
 
 def search(s, lang):
     try:
