@@ -16,7 +16,7 @@ DEFAULT_LANG = 'fr'
 DEFAULT_QUALITY = 'hd'
 CLSID = 'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000'
 SEARCH_URL = 'http://videos.arte.tv/%s/do_search/videos/%s?q='
-SEARCH_LANG = {'fr': 'recherche', 'de':'suche'}
+SEARCH_LANG = {'fr': 'recherche', 'de':'suche', 'en': 'search'}
 
 BOLD   = '[1m'
 NC     = '[0m'    # no color
@@ -218,7 +218,7 @@ COMMANDS
 
     parser = OptionParser(usage=usage)
     parser.add_option('-l', '--lang', dest='lang', type='string', default=DEFAULT_LANG,
-            action='store', help='language of the video fr or de (default: fr)')
+            action='store', help='language of the video fr, de, en (default: fr)')
     parser.add_option('-q', '--quality', dest='quality', type='string', default=DEFAULT_QUALITY,
             action='store', help='quality of the video sd or hd (default: hd)')
     parser.add_option('--quiet', dest='quiet', default=False,
@@ -226,7 +226,7 @@ COMMANDS
 
     options, args = parser.parse_args()
 
-    if options.lang not in ('fr', 'de'):
+    if options.lang not in ('fr', 'de', 'en'):
         die('Invalid option')
     if options.quality not in ('sd', 'hd'): # what is EQ ?
         die('Invalid option')
