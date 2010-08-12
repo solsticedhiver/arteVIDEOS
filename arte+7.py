@@ -75,7 +75,7 @@ class MyCmd(Cmd):
         if num < 0 or num >= len(self.results):
             raise ArgError
 
-        return 'http://videos.arte.tv'+self.videos[num].find('h2').a['href']
+        return 'http://videos.arte.tv'+self.results[num][1]
 
     def do_url(self, arg):
         '''url NUMBER
@@ -305,7 +305,8 @@ def get_channels_programs(lang):
     try:
         url = (HOME_URL % (lang, lang))
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-        videos = soup.findAll('div', {'class': 'video'})
+        video_soup = soup.findAll('div', {'class': 'video'})
+        videos = extract_videos(video_soup)
 
         #get the channels
         uls = soup.findAll('ul', {'class': 'channelList'})
@@ -338,7 +339,8 @@ def channel(ch, lang, channels):
     try:
         url = (FILTER_URL % (lang, lang)) + 'channel-'+','.join('%d' % channels[i][1] for i in ch)  + '-program-'
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-        videos = soup.findAll('div', {'class': 'video'})
+        video_soup = soup.findAll('div', {'class': 'video'})
+        videos = extract_videos(video_soup)
         return videos
     except URLError:
         die("Can't complete the requested search")
@@ -348,7 +350,8 @@ def program(pr, lang, programs):
     try:
         url = (FILTER_URL % (lang, lang)) + 'channel-' + '-program-'+','.join('%d' % programs[i][1] for i in pr)
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-        videos = soup.findAll('div', {'class': 'video'})
+        video_soup = soup.findAll('div', {'class': 'video'})
+        videos = extract_videos(video_soup)
         return videos
     except URLError:
         die("Can't complete the requested search")
@@ -358,19 +361,26 @@ def search(s, lang):
     try:
         url = (SEARCH_URL % (lang, SEARCH_LANG[lang])) + s.replace(' ', '+')
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-        videos = soup.findAll('div', {'class': 'video'})
+        video_soup = soup.findAll('div', {'class': 'video'})
+        videos = extract_videos(video_soup)
         return videos
     except URLError:
         die("Can't complete the requested search")
     return None
 
+def extract_videos(video_soup):
+    videos = []
+    for v in video_soup:
+        teaser = v.find('p', {'class': 'teaserText'}).string
+        a = v.find('h2').a
+        videos.append((a.string, a['href'], teaser))
+    return videos
+
 def print_results(results, verbose=True):
-    count = 0
-    for r in results:
-        count += 1
-        print BOLD + '(%d) '% count + r.find('h2').a.string + NC
+    for i in range(len(results)):
+        print '%s(%d) %s'% (BOLD, i+1, results[i][0] + NC)
         if verbose:
-            print '    '+r.find('p', {'class': 'teaserText'}).string
+            print '    '+ results[i][2]
 
 def play(url_page, options):
     cmd_args = make_cmd_args(url_page, options, streaming=True)
