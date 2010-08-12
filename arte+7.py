@@ -30,7 +30,7 @@ from os import environ as os_environ
 from optparse import OptionParser
 from cmd import Cmd
 
-VERSION = '0.2.1.1'
+VERSION = '0.2.2.1'
 DEFAULT_LANG = 'fr'
 QUALITY = ('sd', 'hd')
 DEFAULT_QUALITY = 'hd'
@@ -362,7 +362,7 @@ def get_channels_programs(lang):
 
         return (videos, channels, programs)
     except URLError:
-        die("Can't complete the requested search")
+        die("Can't get the home page of arte+7")
     return None
 
 def channel(ch, lang, channels):
@@ -419,7 +419,18 @@ def play(url_page, options):
     if player_cmd is not None:
         p1 = Popen(['rtmpdump'] + cmd_args.split(' '), stdout=PIPE)
         p2 = Popen(player_cmd.split(' '), stdin=p1.stdout, stderr=PIPE)
-        p2.communicate()[0]
+        p2.wait()
+        # try to kill rtmpdump
+        # FIXME: why is this not working ?
+        try:
+            p2.stdin.close()
+            p1.stdout.close()
+            p1.kill()
+        except AttributeError:
+            # if we use python 2.5
+            from signal import SIGTERM, SIGKILL
+            from os import kill
+            kill(p1.pid, SIGKILL)
     else:
         print >> stderr, 'Error: no player has been found.'
 
