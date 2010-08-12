@@ -247,6 +247,11 @@ class MyCmd(Cmd):
         '''exit the command line interpreter'''
         return True
 
+    def do_EOF(self, arg):
+        '''exit the command line interpreter'''
+        print
+        return True
+
     def default(self, arg):
         print >> stderr, 'Error: don\'t know how to %s' % arg
 
