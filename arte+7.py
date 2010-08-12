@@ -1,5 +1,20 @@
 #!/usr/bin/python
 # -*- coding: utf8 -*-
+
+#             DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                     Version 2, December 2004
+# 
+#  Copyright (C) 2010 solsTiCe d'Hiver <solstice.dhiver@gmail.com>
+# 
+#  Everyone is permitted to copy and distribute verbatim or modified
+#  copies of this license document, and changing it is allowed as long
+#  as the name is changed.
+# 
+#             DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#    TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+# 
+#   0. You just DO WHAT THE FUCK YOU WANT TO.
+
 from sys import exit, argv, stderr
 try:
     from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
@@ -24,8 +39,11 @@ DEFAULT_QUALITY = 'hd'
 PLAYERS = ('mplayer', 'vlc', 'xine', 'totem')
 
 CLSID = 'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000'
+# with 50 per page but only get 25 because the rest is done with ajax (?)
+HOME_URL = 'http://videos.arte.tv/%s/videos/arte7#/%s/thumb///1/50/'
 SEARCH_URL = 'http://videos.arte.tv/%s/do_search/videos/%s?q='
 SEARCH_LANG = {'fr': 'recherche', 'de':'suche', 'en': 'search'}
+# same remark as above
 FILTER_URL = 'http://videos.arte.tv/%s/do_delegate/videos/arte7/index-3211552,view,asThumbnail.html?hash=%s/thumb///1/50/'
 CHANNELS = (
         3188640, # Arts & Culture (0)
@@ -248,6 +266,13 @@ class MyCmd(Cmd):
         elif arg in ('sd', 'hd'):
             self.options.quality = arg
 
+    def do_list(self, arg):
+        '''list
+    list the video of the home page'''
+        results = home(self.options.lang)
+        print_results(results)
+        self.videos = results
+
     def do_channel(self, arg):
         '''channel [NUMBER] ...
     display available channels or search video for given channel(s)'''
@@ -298,6 +323,7 @@ class MyCmd(Cmd):
     quality [sd|hd] display or switch to a different video quality
     channel [NUMBER] display available channels or search video for given channel(s)
     program [NUMBER] display available programs or search video for given program(s)
+    list            list the video of the home page
     help            show this help
     quit            quit the cli
     exit            exit the cli'''
@@ -369,6 +395,16 @@ def find_in_path(path, filename):
             return True
     return False
 
+def home(lang):
+    try:
+        url = (HOME_URL % (lang, lang))
+        soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
+        videos = soup.findAll('div', {'class': 'video'})
+        return videos
+    except URLError:
+        die("Can't complete the requested search")
+    return None
+
 def channel(ch, lang):
     try:
         url = (FILTER_URL % (lang, lang)) + 'channel-'+','.join('%d' % CHANNELS[i] for i in ch)  + '-program-'
@@ -415,7 +451,7 @@ def play(url_page, options):
         if player == 'totem':
             player_cmd = 'totem fd://0'
         elif player == 'mplayer':
-            player_cmd = 'mplayer -'
+            player_cmd = 'mplayer -really-quiet -'
         elif player == 'vlc':
             player_cmd = 'vlc -'
         elif player == 'xine':
@@ -425,13 +461,14 @@ def play(url_page, options):
         #    player_cmd = 'foo [option to read from stdin]'
 
         p1 = Popen(['rtmpdump'] + cmd_args.split(' '), stdout=PIPE)
-        p2 = Popen(player_cmd.split(' '), stdin=p1.stdout)
+        p2 = Popen(player_cmd.split(' '), stdin=p1.stdout, stderr=PIPE)
     else:
         print >> stderr, 'Error: no player has been found.'
 
 def record(url_page, options):
     cmd_args = make_cmd_args(url_page, options)
-    Popen(['rtmpdump'] + cmd_args.split(' '))
+    p = Popen(['rtmpdump'] + cmd_args.split(' '))
+    p.wait()
 
 def make_cmd_args(url_page, options, streaming=False):
     if not find_in_path(os_environ['PATH'], 'rtmpdump'):
@@ -445,15 +482,18 @@ def make_cmd_args(url_page, options, streaming=False):
         cmd_args = '-r %s --swfVfy %s --flv %s' % (video_url, player_url, output_file)
     else:
         cmd_args = '-r %s --swfVfy %s' % (video_url, player_url)
-    if options.quiet:
+    if not options.verbose:
         cmd_args += ' --quiet'
 
-    if not streaming and os_path_exists(output_file):
-        # try to resume a download
-        cmd_args += ' --resume'
-        print ':: Resuming download of %s' % output_file
+    if not streaming:
+        if os_path_exists(output_file):
+            # try to resume a download
+            cmd_args += ' --resume'
+            print ':: Resuming download of %s' % output_file
+        else:
+            print ':: Downloading to %s' % output_file
     else:
-        print ':: Downloading and saving to %s' % output_file
+        print ':: Streaming from %s' % video_url
 
     return cmd_args
 
@@ -487,8 +527,8 @@ COMMANDS
             action='store', help='language of the video fr, de, en (default: fr)')
     parser.add_option('-q', '--quality', dest='quality', type='string', default=DEFAULT_QUALITY,
             action='store', help='quality of the video sd or hd (default: hd)')
-    parser.add_option('--quiet', dest='quiet', default=False,
-            action='store_true', help='do not show output of rtmpdump')
+    parser.add_option('--verbose', dest='verbose', default=False,
+            action='store_true', help='show output of rtmpdump')
 
     options, args = parser.parse_args()
 
