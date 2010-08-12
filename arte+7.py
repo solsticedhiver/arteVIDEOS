@@ -3,16 +3,16 @@
 
 #             DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
 #                     Version 2, December 2004
-# 
+#
 #  Copyright (C) 2010 solsTiCe d'Hiver <solstice.dhiver@gmail.com>
-# 
+#
 #  Everyone is permitted to copy and distribute verbatim or modified
 #  copies of this license document, and changing it is allowed as long
 #  as the name is changed.
-# 
+#
 #             DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
 #    TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
-# 
+#
 #   0. You just DO WHAT THE FUCK YOU WANT TO.
 
 from sys import exit, argv, stderr
@@ -51,136 +51,6 @@ SEARCH_URL = 'http://videos.arte.tv/%s/do_search/videos/%s?q='
 SEARCH_LANG = {'fr': 'recherche', 'de':'suche', 'en': 'search'}
 # same remark as above
 FILTER_URL = 'http://videos.arte.tv/%s/do_delegate/videos/arte7/index-3211552,view,asThumbnail.html?hash=%s/thumb///1/50/'
-CHANNELS = (
-        3188640, # Arts & Culture (0)
-        3188644, # Discovery (1)
-        3188646, # Documentary (2)
-        3188642, # Drama & Cinema (3)
-        3188650, # Environment & Science (4)
-        3188648, # Europe (5)
-        3188654, # Geopolitics & History (6)
-        3188656, # Kids & Family (7)
-        3188636, # News (8)
-        3188638, # Pop Culture & Music (9)
-        3188652, # Society (10)
-        )
-CHANNELS_LANG = {'fr': (
-            ('Actualités'               , 8),
-            ('Art & Culture'            , 0),
-            ('Cinéma & Fiction'         , 3),
-            ('Culture Pop & Alternative', 9),
-            ('Découverte'               , 1),
-            ('Documentaire'             , 2),
-            ('Environnement & Sciences' , 4),
-            ('Europe'                   , 5),
-            ('Géopolitique & Histoire'  , 6),
-            ('Junior'                   , 7),
-            ('Société'                  , 10)
-            ), 'de': (
-            ('Aktuelles'               , 8),
-            ('Dokumentationen'         , 2),
-            ('Entdeckung'              , 1),
-            ('Europa'                  , 5),
-            ('Geopolitik & Geschichte' , 6),
-            ('Gesellschaft'            , 10),
-            ('Junior'                  , 7),
-            ('Kino & Serien'           , 3),
-            ('Kunst & Kultur'          , 0),
-            ('Popkultur & Musik'       , 9),
-            ('Umwelt & Wissenschaft'   , 4)
-            ), 'en':(
-            ('Arts & Culture'         , 0),
-            ('Discovery'              , 1),
-            ('Documentary'            , 2),
-            ('Drama & Cinema'         , 3),
-            ('Environment & Science'  , 4),
-            ('Europe'                 , 5),
-            ('Geopolitics & History'  , 6),
-            ('Kids & Family'          , 7),
-            ('News'                   , 8),
-            ('Pop Culture & Music'    , 9),
-            ('Society'                , 10)
-            )
-        }
-
-PROGRAMS = (
-        3188704,    # 360° - GEO Report (0)
-        3188708,    # ARTE Journal (1)
-        3219086,    # ARTE Lounge (2)
-        3188710,    # ARTE Reportage (3)
-        3188720,    # Arts & artists (4)
-        3199714,    # Cut up (5)
-        3199710,    # Giordano meets .. (6)
-        3188722,    # History on Wednesday (7)
-        3224652,    # Karambolage (8)
-        3188724,    # Metropolis (9)
-        3188728,    # Philosophy (10)
-        3188712,    # Short Circuit (11)
-        3193602,    # The blogger (12)
-        3188716,    # The Night / La Nuit (13)
-        3188628,    # Tracks (14)
-        3188730,    # X:enius (15)
-        3188732)    # Yourope (16)
-
-PROGRAMS_LANG = {
-            'fr': (
-            ('360° - GEO'                  , 0),
-            ('ARTE Journal'                , 1),
-            ('ARTE Lounge'                 , 2),
-            ('ARTE Reportage'              , 3),
-            ('Court-Circuit'               , 11),
-            ('Cut up'                      , 5),
-            ('Die Nacht/La nuit'           , 13),
-            ('Giordano hebdo'              , 6),
-            ('Karambolage'                 , 8),
-            ('L\'Art et la Manière'        , 4),
-            ('Le Blogueur'                 , 12),
-            ('Les mercredis de l\'histoire', 7),
-            ('Metropolis'                  , 9),
-            ('Philosophie'                 , 10),
-            ('Tracks'                      , 14),
-            ('X:enius'                     , 15),
-            ('Yourope'                     , 16),
-            ),
-            'de': (
-            ('360° - GEO-Reportage'  , 0),
-            ('ARTE Journal'          , 1),
-            ('ARTE Lounge'           , 2),
-            ('ARTE Reportage'        , 3),
-            ('Cut up'                , 5),
-            ('Der Blogger'           , 12),
-            ('Geschichte am Mittwoch', 7),
-            ('Giordano trifft ... '  , 6),
-            ('Karambolage'           , 8),
-            ('Künstler hautnah'      , 4),
-            ('Kurzschluss'           , 11),
-            ('La nuit/Die Nacht'     , 13),
-            ('Metropolis'            , 9),
-            ('Philosophie'           , 10),
-            ('Tracks'                , 14),
-            ('X:enius'               , 15),
-            ('Yourope'               , 16),
-            ),
-            'en': (
-            ('360° - GEO Report'   , 0),
-            ('ARTE Journal'        , 1),
-            ('ARTE Lounge'         , 2),
-            ('ARTE Reportage'      , 3),
-            ('Arts & artists'      , 4),
-            ('Cut up'              , 5),
-            ('Giordano meets ..'   , 6),
-            ('History on Wednesday', 7),
-            ('Karambolage'         , 8),
-            ('Metropolis'          , 9),
-            ('Philosophy'          , 10),
-            ('Short Circuit'       , 11),
-            ('The blogger'         , 12),
-            ('The Night / La Nuit' , 13),
-            ('Tracks'              , 14),
-            ('X:enius'             , 15),
-            ('Yourope'             , 16),
-            )
-            }
 
 BOLD   = '[1m'
 NC     = '[0m'    # no color
@@ -189,17 +59,20 @@ class ArgError(Exception):
     pass
 
 class MyCmd(Cmd):
-    def __init__(self, videos, options):
+    def __init__(self, results, options):
         Cmd.__init__(self)
         self.prompt = 'arte+7> '
         self.intro = '\nType "help" to see available commands.'
 
-        self.videos = videos
+        self.results = results
+        self.videos = None
         self.options = options
+        self.channels = None
+        self.programs = None
 
     def process_num(self, arg):
         num = int(arg)-1
-        if num < 0 or num >= len(self.videos):
+        if num < 0 or num >= len(self.results):
             raise ArgError
 
         return 'http://videos.arte.tv'+self.videos[num].find('h2').a['href']
@@ -254,7 +127,7 @@ class MyCmd(Cmd):
         results = search(arg, self.options.lang)
         if results is not None:
             print_results(results)
-            self.videos = results
+            self.results = results
 
     def do_lang(self, arg):
         '''lang [fr|de|en]
@@ -263,6 +136,8 @@ class MyCmd(Cmd):
             print self.options.lang
         elif arg in ('fr' ,'de', 'en'):
             self.options.lang = arg
+            self.channels = None
+            self.programs = None
 
     def do_quality(self, arg):
         '''quality [sd|hd]
@@ -275,26 +150,41 @@ class MyCmd(Cmd):
     def do_list(self, arg):
         '''list
     list the video of the home page'''
-        results = home(self.options.lang)
-        print_results(results)
-        self.videos = results
+        if self.videos is None:
+            v,c,p = get_channels_programs(self.options.lang)
+            self.videos = v
+            self.channels = c
+            self.programs = p
+
+        print_results(self.videos)
+        self.results = self.videos
 
     def do_channel(self, arg):
         '''channel [NUMBER] ...
     display available channels or search video for given channel(s)'''
         if arg == '':
-            for c,n in CHANNELS_LANG[self.options.lang]:
-                print '(%d) %s' % (n+1, c)
+            if self.channels is None:
+                # try to get them from home page
+                v,c,p = get_channels_programs(self.options.lang)
+                if c is not None:
+                    self.channels = c
+                    self.programs = p
+                else:
+                    print >> stderr, 'Error: Can\'t retrieve channels'
+                    return
+            print '\n'.join('(%d) %s' % (i+1, self.channels[i][0]) for i in range(len(self.channels)))
         else:
+            if self.channels is None:
+                self.do_channel('')
             try:
                 ch = [int(i)-1 for i in arg.split(' ')]
                 for i in ch:
-                    if i<0 or i>=len(CHANNELS):
+                    if i<0 or i>=len(self.channels):
                         print >> stderr, 'Error: unknown channel #%d.' % (i+1)
                         return
-                videos = channel(ch, self.options.lang)
+                videos = channel(ch, self.options.lang, self.channels)
                 print_results(videos)
-                self.videos = videos
+                self.results = videos
             except ValueError:
                 print >> stderr, 'Error: wrong argument; must be an integer'
 
@@ -302,18 +192,28 @@ class MyCmd(Cmd):
         '''program [NUMBER] ...
     display available programs or search video for given program(s)'''
         if arg == '':
-            for c,n in PROGRAMS_LANG[self.options.lang]:
-                print '(%d) %s' % (n+1, c)
+            if self.programs is None:
+                # try to get them from home page
+                v,c,p = get_channels_programs(self.options.lang)
+                if p is not None:
+                    self.programs = p
+                    self.channels = c
+                else:
+                    print >> stderr, 'Error: Can\'t retrieve programs'
+                    return
+            print '\n'.join('(%d) %s' % (i+1, self.programs[i][0]) for i in range(len(self.programs)))
         else:
+            if self.programs is None:
+                self.do_program('')
             try:
                 pr = [int(i)-1 for i in arg.split(' ')]
                 for i in pr:
-                    if i<0 or i>=len(PROGRAMS):
+                    if i<0 or i>=len(self.programs):
                         print >> stderr, 'Error: unknown program #%d.' % (i+1)
                         return
-                videos = program(pr, self.options.lang)
+                videos = program(pr, self.options.lang, self.programs)
                 print_results(videos)
-                self.videos = videos
+                self.results = videos
             except ValueError:
                 print >> stderr, 'Error: wrong argument; must be an integer'
 
@@ -401,19 +301,42 @@ def find_in_path(path, filename):
             return True
     return False
 
-def home(lang):
+def get_channels_programs(lang):
     try:
         url = (HOME_URL % (lang, lang))
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
         videos = soup.findAll('div', {'class': 'video'})
-        return videos
+
+        #get the channels
+        uls = soup.findAll('ul', {'class': 'channelList'})
+        channels, codes = [], []
+        for u in uls:
+            channels.extend(i.string for i in u.findAll('a'))
+            codes.extend(int(i['value']) for i in u.findAll('input'))
+        if channels != []:
+            channels = zip(channels, codes)
+        else:
+            channels = None
+
+        # get the programs
+        uls = soup.findAll('ul', {'class': 'programList'})
+        programs, codes = [], []
+        for u in uls:
+            programs.extend(i.string for i in u.findAll('a'))
+            codes.extend(int(i['value']) for i in u.findAll('input'))
+        if programs != []:
+            programs = zip(programs, codes)
+        else:
+            programs = None
+
+        return (videos, channels, programs)
     except URLError:
         die("Can't complete the requested search")
     return None
 
-def channel(ch, lang):
+def channel(ch, lang, channels):
     try:
-        url = (FILTER_URL % (lang, lang)) + 'channel-'+','.join('%d' % CHANNELS[i] for i in ch)  + '-program-'
+        url = (FILTER_URL % (lang, lang)) + 'channel-'+','.join('%d' % channels[i][1] for i in ch)  + '-program-'
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
         videos = soup.findAll('div', {'class': 'video'})
         return videos
@@ -421,9 +344,9 @@ def channel(ch, lang):
         die("Can't complete the requested search")
     return None
 
-def program(pr, lang):
+def program(pr, lang, programs):
     try:
-        url = (FILTER_URL % (lang, lang)) + 'channel-' + '-program-'+','.join('%d' % PROGRAMS[i] for i in pr) 
+        url = (FILTER_URL % (lang, lang)) + 'channel-' + '-program-'+','.join('%d' % programs[i][1] for i in pr)
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
         videos = soup.findAll('div', {'class': 'video'})
         return videos
