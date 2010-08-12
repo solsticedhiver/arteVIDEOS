@@ -32,6 +32,7 @@ from cmd import Cmd
 
 VERSION = '0.2.1.1'
 DEFAULT_LANG = 'fr'
+QUALITY = ('sd', 'hd')
 DEFAULT_QUALITY = 'hd'
 # You could add your favorite player at the beginning of the PLAYERS tuple
 # It must follow the template:
@@ -49,6 +50,7 @@ CLSID = 'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000'
 HOME_URL = 'http://videos.arte.tv/%s/videos/arte7#/%s/thumb///1/50/'
 SEARCH_URL = 'http://videos.arte.tv/%s/do_search/videos/%s?q='
 SEARCH_LANG = {'fr': 'recherche', 'de':'suche', 'en': 'search'}
+LANG = SEARCH_LANG.keys()
 # same remark as above
 FILTER_URL = 'http://videos.arte.tv/%s/do_delegate/videos/arte7/index-3211552,view,asThumbnail.html?hash=%s/thumb///1/50/'
 
@@ -129,23 +131,46 @@ class MyCmd(Cmd):
             print_results(results)
             self.results = results
 
+    def complete_lang(self, text, line, begidx, endidx):
+        if text == '':
+            return LANG
+        elif text.startswith('d'):
+            return ('de',)
+        elif text.startswith('f'):
+            return('fr',)
+        elif text.startswith('e'):
+            return('en',)
+
     def do_lang(self, arg):
         '''lang [fr|de|en]
     display or switch to a different language'''
         if arg == '':
             print self.options.lang
-        elif arg in ('fr' ,'de', 'en'):
+        elif arg in LANG:
             self.options.lang = arg
             self.channels = None
             self.programs = None
+            self.videos = None
+        else:
+            print >> stderr, 'Error: lang could be %s' % ','.join(LANG)
+
+    def complete_quality(self, text, line, begidx, endidx):
+        if text == '':
+            return QUALITY
+        elif text.startswith('s'):
+            return ('sd',)
+        elif text.startswith('h'):
+            return('hd',)
 
     def do_quality(self, arg):
         '''quality [sd|hd]
     display or switch to a different quality'''
         if arg == '':
             print self.options.quality
-        elif arg in ('sd', 'hd'):
+        elif arg in QUALITY:
             self.options.quality = arg
+        else:
+            print >> stderr, 'Error: quality could be %s' % ','.join(QUALITY)
 
     def do_list(self, arg):
         '''list
@@ -495,4 +520,4 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        print 'Aborted'
+        print '\nAborted'
