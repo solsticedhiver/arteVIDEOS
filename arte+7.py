@@ -389,6 +389,7 @@ def play(url_page, options):
     if player_cmd is not None:
         p1 = Popen(['rtmpdump'] + cmd_args.split(' '), stdout=PIPE)
         p2 = Popen(player_cmd.split(' '), stdin=p1.stdout, stderr=PIPE)
+        p2.communicate()[0]
     else:
         print >> stderr, 'Error: no player has been found.'
 
@@ -470,9 +471,7 @@ COMMANDS
         die('Invalid command')
 
     if args[0] == 'play':
-        # video_url = get_rtmp_url(args[1], quality=options.quality, lang=options.lang)[0]
-        video_url = None
-        play(video_url)
+        play(args[1], options)
         exit(1)
 
     elif args[0] == 'url':
