@@ -30,13 +30,19 @@ from os import environ as os_environ
 from optparse import OptionParser
 from cmd import Cmd
 
-VERSION = '0.2'
+VERSION = '0.2.1.1'
 DEFAULT_LANG = 'fr'
 DEFAULT_QUALITY = 'hd'
 # You could add your favorite player at the beginning of the PLAYERS tuple
-# Then, you need to add the command line in play function below.
-# Hint: look for FLAG_PLAYER tag
-PLAYERS = ('mplayer', 'vlc', 'xine', 'totem')
+# It must follow the template:
+# ('executable to look for', 'command to read from stdin')
+# the order is significant i.e. the players are looked for in this order
+PLAYERS = (
+        ('mplayer', 'mplayer -really-quiet -'),
+        ('vlc', 'vlc -'),
+        ('xine', 'xine stdin:/'),
+        ('totem', 'totem fd://0'),
+        )
 
 CLSID = 'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000'
 # with 50 per page but only get 25 because the rest is done with ajax (?)
@@ -445,21 +451,9 @@ def print_results(results, verbose=True):
 
 def play(url_page, options):
     cmd_args = make_cmd_args(url_page, options, streaming=True)
-    player = find_player(PLAYERS)
+    player_cmd = find_player(PLAYERS)
 
-    if player is not None:
-        if player == 'totem':
-            player_cmd = 'totem fd://0'
-        elif player == 'mplayer':
-            player_cmd = 'mplayer -really-quiet -'
-        elif player == 'vlc':
-            player_cmd = 'vlc -'
-        elif player == 'xine':
-            player_cmd = 'xine stdin:/'
-        # FLAG_PLAYER: add your player here and uncomment the lines
-        #elif player == 'foo':
-        #    player_cmd = 'foo [option to read from stdin]'
-
+    if player_cmd is not None:
         p1 = Popen(['rtmpdump'] + cmd_args.split(' '), stdout=PIPE)
         p2 = Popen(player_cmd.split(' '), stdin=p1.stdout, stderr=PIPE)
     else:
@@ -497,10 +491,10 @@ def make_cmd_args(url_page, options, streaming=False):
 
     return cmd_args
 
-def find_player(L):
-    for p in L:
-        if find_in_path(os_environ['PATH'], p):
-            return p
+def find_player(d):
+    for e, c in d:
+        if find_in_path(os_environ['PATH'], e):
+            return c
     return None
 
 def main():
