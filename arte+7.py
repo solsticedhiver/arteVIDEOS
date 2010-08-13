@@ -420,17 +420,16 @@ def play(url_page, options):
         p1 = Popen(['rtmpdump'] + cmd_args.split(' '), stdout=PIPE)
         p2 = Popen(player_cmd.split(' '), stdin=p1.stdout, stderr=PIPE)
         p2.wait()
-        # try to kill rtmpdump
-        # FIXME: why is this not working ?
+        # kill the zombie rtmpdump
         try:
-            p2.stdin.close()
-            p1.stdout.close()
             p1.kill()
+            p1.wait()
         except AttributeError:
             # if we use python 2.5
-            from signal import SIGTERM, SIGKILL
-            from os import kill
+            from signal import SIGKILL
+            from os import kill, waitpid
             kill(p1.pid, SIGKILL)
+            waitpid(p1.pid, 0)
     else:
         print >> stderr, 'Error: no player has been found.'
 
