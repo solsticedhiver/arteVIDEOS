@@ -313,7 +313,7 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
             if DEFAULT_LANG in videos:
                 xml_url = videos[DEFAULT_LANG]
             else:
-                xml_url = videos[0]
+                xml_url = videos.popitem()[1]
         else:
             xml_url = videos[lang]
 
