@@ -192,6 +192,7 @@ class MyCmd(Cmd):
                 # try to get them from home page
                 v,c,p = get_channels_programs(self.options.lang)
                 if c is not None:
+                    self.videos = v
                     self.channels = c
                     self.programs = p
                 else:
@@ -221,6 +222,7 @@ class MyCmd(Cmd):
                 # try to get them from home page
                 v,c,p = get_channels_programs(self.options.lang)
                 if p is not None:
+                    self.videos = v
                     self.programs = p
                     self.channels = c
                 else:
