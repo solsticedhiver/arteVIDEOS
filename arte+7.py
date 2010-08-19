@@ -21,7 +21,7 @@ try:
 except ImportError:
     print >> stderr, 'Error: you need BeautifulSoup python module'
     exit(1)
-from urllib2 import urlopen, URLError
+from urllib2 import urlopen, URLError, Request
 from urllib import unquote
 from urlparse import urlparse
 from subprocess import Popen, PIPE
@@ -52,7 +52,7 @@ SEARCH_URL = 'http://videos.arte.tv/%s/do_search/videos/%s?q='
 SEARCH_LANG = {'fr': 'recherche', 'de':'suche', 'en': 'search'}
 LANG = SEARCH_LANG.keys()
 # same remark as above
-FILTER_URL = 'http://videos.arte.tv/%s/do_delegate/videos/arte7/index-3211552,view,asThumbnail.html?hash=%s/thumb///1/50/'
+FILTER_URL = 'http://videos.arte.tv/%s/do_delegate/videos/arte7/index-3211552,view,asThumbnail.html?hash=%s/thumb///%d/50/'
 
 BOLD   = '[1m'
 NC     = '[0m'    # no color
@@ -176,10 +176,8 @@ class MyCmd(Cmd):
         '''list
     list the video of the home page'''
         if self.videos is None:
-            v,c,p = get_channels_programs(self.options.lang)
-            self.videos = v
-            self.channels = c
-            self.programs = p
+            page = 1
+            self.videos = get_list(page, self.options.lang)
 
         print_results(self.videos)
         self.results = self.videos
@@ -190,9 +188,8 @@ class MyCmd(Cmd):
         if arg == '':
             if self.channels is None:
                 # try to get them from home page
-                v,c,p = get_channels_programs(self.options.lang)
+                c,p = get_channels_programs(self.options.lang)
                 if c is not None:
-                    self.videos = v
                     self.channels = c
                     self.programs = p
                 else:
@@ -220,9 +217,8 @@ class MyCmd(Cmd):
         if arg == '':
             if self.programs is None:
                 # try to get them from home page
-                v,c,p = get_channels_programs(self.options.lang)
+                c,p = get_channels_programs(self.options.lang)
                 if p is not None:
-                    self.videos = v
                     self.programs = p
                     self.channels = c
                 else:
@@ -333,13 +329,23 @@ def find_in_path(path, filename):
             return True
     return False
 
-def get_channels_programs(lang):
+def get_list(page, lang):
     try:
-        url = (HOME_URL % (lang, lang))
-        soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
+        # use an ajax request to get all the 50 first videos of page page in (1,2,3)
+        url = FILTER_URL % (lang, lang, page)
+        request = Request(url, headers={'X-Requested-With': 'XMLHttpRequest'})
+        soup = BeautifulSoup(urlopen(request).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
         video_soup = soup.findAll('div', {'class': 'video'})
         videos = extract_videos(video_soup)
+        return videos
+    except URLError:
+        die("Can't get the home page of arte+7")
+    return None
 
+def get_channels_programs(lang):
+    try:
+        url = HOME_URL % (lang, lang)
+        soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
         #get the channels
         uls = soup.findAll('ul', {'class': 'channelList'})
         channels, codes = [], []
@@ -362,14 +368,14 @@ def get_channels_programs(lang):
         else:
             programs = None
 
-        return (videos, channels, programs)
+        return (channels, programs)
     except URLError:
         die("Can't get the home page of arte+7")
     return None
 
 def channel(ch, lang, channels):
     try:
-        url = (FILTER_URL % (lang, lang)) + 'channel-'+','.join('%d' % channels[i][1] for i in ch)  + '-program-'
+        url = (FILTER_URL % (lang, lang, 1)) + 'channel-'+','.join('%d' % channels[i][1] for i in ch)  + '-program-'
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
         video_soup = soup.findAll('div', {'class': 'video'})
         videos = extract_videos(video_soup)
@@ -380,7 +386,7 @@ def channel(ch, lang, channels):
 
 def program(pr, lang, programs):
     try:
-        url = (FILTER_URL % (lang, lang)) + 'channel-' + '-program-'+','.join('%d' % programs[i][1] for i in pr)
+        url = (FILTER_URL % (lang, lang, 1)) + 'channel-' + '-program-'+','.join('%d' % programs[i][1] for i in pr)
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
         video_soup = soup.findAll('div', {'class': 'video'})
         videos = extract_videos(video_soup)
