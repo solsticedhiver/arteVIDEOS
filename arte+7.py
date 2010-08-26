@@ -475,7 +475,8 @@ def make_cmd_args(url_page, options, streaming=False):
     video_url, player_url = get_rtmp_url(url_page, quality=options.quality, lang=options.lang)
     output_file = None
     if not streaming:
-        output_file = urlparse(url_page).path.split('/')[-1].replace('.html','.flv')
+        output_file = urlparse(url_page).path.split('/')[-1]
+        output_file = output_file.replace('.html', '_%s_%s.flv' % (options.quality, options.lang))
         cmd_args = '-r %s --swfVfy %s --flv %s' % (video_url, player_url, output_file)
     else:
         cmd_args = '-r %s --swfVfy %s' % (video_url, player_url)
