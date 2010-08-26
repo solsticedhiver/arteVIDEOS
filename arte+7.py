@@ -86,9 +86,9 @@ class MyCmd(Cmd):
             url_page = self.process_num(arg)
             print get_rtmp_url(url_page)[0]
         except ValueError:
-            print 'Error: wrong argument (must be an integer)'
+            print >> stderr, 'Errror: wrong argument (must be an integer)'
         except ArgError:
-            print 'Error: no video with this number'
+            print >> stderr, 'Errror: no video with this number'
 
     def do_player_url(self, arg):
         '''player_url NUMBER
@@ -97,9 +97,9 @@ class MyCmd(Cmd):
             url_page = self.process_num(arg)
             print get_rtmp_url(url_page)[1]
         except ValueError:
-            print 'Error: wrong argument (must be an integer)'
+            print >> stderr, 'Errror: wrong argument (must be an integer)'
         except ArgError:
-            print 'Error: no video with this number'
+            print >> stderr, 'Errror: no video with this number'
 
     def do_info(self, arg):
         '''info NUMBER
@@ -108,9 +108,9 @@ class MyCmd(Cmd):
             url_page = self.process_num(arg)
             info(url_page, self.options)
         except ValueError:
-            print 'Error: wrong argument (must be an integer)'
+            print >> stderr, 'Errror: wrong argument (must be an integer)'
         except ArgError:
-            print 'Error: no video with this number'
+            print >> stderr, 'Errror: no video with this number'
 
     def do_play(self, arg):
         '''play NUMBER
@@ -119,9 +119,9 @@ class MyCmd(Cmd):
             url_page = self.process_num(arg)
             play(url_page, self.options)
         except ValueError:
-            print 'Error: wrong argument (must be an integer)'
+            print >> stderr, 'Errror: wrong argument (must be an integer)'
         except ArgError:
-            print 'Error: no video with this number'
+            print >> stderr, 'Errror: no video with this number'
 
     def do_record(self, arg):
         '''record NUMBER
@@ -130,9 +130,9 @@ class MyCmd(Cmd):
             url_page = self.process_num(arg)
             record(url_page, self.options)
         except ValueError:
-            print 'Error: wrong argument (must be an integer)'
+            print >> stderr, 'Errror: wrong argument (must be an integer)'
         except ArgError:
-            print 'Error: no video with this number'
+            print >> stderr, 'Errror: no video with this number'
 
     def do_search(self, arg):
         '''search STRING
