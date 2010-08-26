@@ -101,6 +101,17 @@ class MyCmd(Cmd):
         except ArgError:
             print 'Error: no video with this number'
 
+    def do_info(self, arg):
+        '''info NUMBER
+        get info details about chosen video'''
+        try:
+            url_page = self.process_num(arg)
+            info(url_page, self.options)
+        except ValueError:
+            print 'Error: wrong argument (must be an integer)'
+        except ArgError:
+            print 'Error: no video with this number'
+
     def do_play(self, arg):
         '''play NUMBER
     play the chosen video'''
@@ -252,6 +263,7 @@ class MyCmd(Cmd):
     quality [sd|hd] display or switch to a different video quality
     channel [NUMBER] display available channels or search video for given channel(s)
     program [NUMBER] display available programs or search video for given program(s)
+    info NUMBER     display details info about given video
     list            list the video of the home page
     help            show this help
     quit            quit the cli
@@ -372,6 +384,15 @@ def get_channels_programs(lang):
     except URLError:
         die("Can't get the home page of arte+7")
     return None
+
+def info(url_page, options):
+    soup = BeautifulSoup(urlopen(url_page).read())
+    rtc = soup.find('div', {'class':'recentTracksCont'})
+    for i in rtc.div.findAll('p'):
+        print '\n'.join(j.string for j in i if j.string is not None)
+    more = rtc.find('div', {'id':'more'}).findAll('p')
+    for i in more:
+        print ' '.join(j.string for j in i if j.string is not None).replace('\n ', '\n')
 
 def channel(ch, lang, channels):
     try:
