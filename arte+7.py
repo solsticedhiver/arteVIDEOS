@@ -449,6 +449,7 @@ def extract_info(soup):
     more = rtc.find('div', {'id':'more'}).findAll('p')
     for i in more:
         s += ' '.join(j.string for j in i if j.string is not None).replace('\n ', '\n')
+    s = s.strip('\n')
     return s
 
 def print_results(results, verbose=True):
