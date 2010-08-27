@@ -67,8 +67,8 @@ class MyCmd(Cmd):
         self.intro = '\nType "help" to see available commands.'
 
         self.results = results
-        self.videos = None
         self.options = options
+        self.videos = None
         self.channels = None
         self.programs = None
 
@@ -162,6 +162,7 @@ class MyCmd(Cmd):
             self.channels = None
             self.programs = None
             self.videos = None
+            self.results = []
         else:
             print >> stderr, 'Error: lang could be %s' % ','.join(LANG)
 
