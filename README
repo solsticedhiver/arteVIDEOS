@@ -12,7 +12,7 @@ You need to get the url of the page presenting the video on arte+7 site
 or use the search command to get a list of videos
 
 COMMANDS
-    url     show the real url of the video
+    url     show the url of the video
     play    play the video directly (NOT IMPLEMENTED YET)
     record  save the video into a local file
     search  search for a video on arte+7
@@ -31,15 +31,15 @@ If you run it without any argument, you enter a simple command line interpreter:
 Type "help" to see available commands.
 arte+7> help
 COMMANDS:
-    url NUMBER      show real url of video
+    url NUMBER      show url of video
     play NUMBER     play chosen video (NOT IMPLEMENTED YET)
     record NUMBER   download and save video to a local file
+    info NUMBER     display details about given video
     search STRING   search for a video
     lang [fr|de|en] display or switch to a different language
     quality [sd|hd] display or switch to a different video quality
     channel [NUMBER] display available channels or search video for given channel(s)
     program [NUMBER] display available programs or search video for given program(s)
-    info NUMBER     display details info about given video
     list            list the video of the home page
     help            show this help
     quit            quit the cli

@@ -30,7 +30,7 @@ from os import environ as os_environ
 from optparse import OptionParser
 from cmd import Cmd
 
-VERSION = '0.2.2.1'
+VERSION = '0.2.3'
 DEFAULT_LANG = 'fr'
 QUALITY = ('sd', 'hd')
 DEFAULT_QUALITY = 'hd'
@@ -83,9 +83,9 @@ class MyCmd(Cmd):
     show the url of the chosen video'''
         try:
             video = self.results[self.process_num(arg)]
-            if 'video_url' not in video:
+            if 'rtmp_url' not in video:
                 get_video_player_info(video, self.options)
-            print video['video_url']
+            print video['rtmp_url']
         except ValueError:
             print >> stderr, 'Error: wrong argument (must be an integer)'
         except ArgError:
@@ -106,7 +106,7 @@ class MyCmd(Cmd):
 
     def do_info(self, arg):
         '''info NUMBER
-        get info details about chosen video'''
+        display details about chosen video'''
         try:
             video = self.results[self.process_num(arg)]
             if 'info' not in video:
@@ -261,15 +261,15 @@ class MyCmd(Cmd):
         '''print the help'''
         if arg == '':
             print '''COMMANDS:
-    url NUMBER      show real url of video
+    url NUMBER      show url of video
     play NUMBER     play chosen video
     record NUMBER   download and save video to a local file
+    info NUMBER     display details about given video
     search STRING   search for a video
     lang [fr|de|en] display or switch to a different language
     quality [sd|hd] display or switch to a different video quality
     channel [NUMBER] display available channels or search video for given channel(s)
     program [NUMBER] display available programs or search video for given program(s)
-    info NUMBER     display details info about given video
     list            list the video of the home page
     help            show this help
     quit            quit the cli
@@ -304,7 +304,7 @@ def die(msg):
     exit(1)
 
 def get_rtmp_url(url_page, quality='hd', lang='fr'):
-    '''get the real url of the video'''
+    '''get the rtmp url of the video and player url and info about video and soup'''
     # inspired by the get_rtmp_url from arte7recorder project
 
     # get the web page
@@ -336,19 +336,21 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
 
         soup = BeautifulStoneSoup(urlopen(xml_url).read())
         # at last the video url
-        video_url = soup.urls.find('url', {'quality': quality}).string
+        rtmp_url = soup.urls.find('url', {'quality': quality}).string
 
-        return (video_url, player_url, info, first_soup)
+        return (rtmp_url, player_url, info, first_soup)
     except URLError:
         die('Invalid URL')
 
 def find_in_path(path, filename):
+    '''is filename in $PATH ?'''
     for i in path.split(':'):
         if os_path_exists('/'.join([i, filename])):
             return True
     return False
 
 def get_list(page, lang):
+    '''get the list of videos from home page'''
     try:
         # use an ajax request to get all the 50 first videos of page page in (1,2,3)
         url = FILTER_URL % (lang, lang, page)
@@ -362,8 +364,9 @@ def get_list(page, lang):
     return None
 
 def get_video_player_info(video, options):
-    v, p, i, s = get_rtmp_url(video['url'], quality=options.quality, lang=options.lang)
-    video['video_url'] = v
+    '''get various info from page of video: *modify* video variable'''
+    r, p, i, s = get_rtmp_url(video['url'], quality=options.quality, lang=options.lang)
+    video['rtmp_url'] = r
     video['player_url'] = p
     video['info'] = i
     video['soup'] = s
@@ -400,6 +403,7 @@ def get_channels_programs(lang):
     return None
 
 def channel(ch, lang, channels):
+    '''get a list of videos for channel ch'''
     try:
         url = (FILTER_URL % (lang, lang, 1)) + 'channel-'+','.join('%d' % channels[i][1] for i in ch)  + '-program-'
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
@@ -411,6 +415,7 @@ def channel(ch, lang, channels):
     return None
 
 def program(pr, lang, programs):
+    '''get a list of videos for program pr'''
     try:
         url = (FILTER_URL % (lang, lang, 1)) + 'channel-' + '-program-'+','.join('%d' % programs[i][1] for i in pr)
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
@@ -422,6 +427,7 @@ def program(pr, lang, programs):
     return None
 
 def search(s, lang):
+    '''search videos matching string s'''
     try:
         url = (SEARCH_URL % (lang, SEARCH_LANG[lang])) + s.replace(' ', '+')
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
@@ -433,6 +439,7 @@ def search(s, lang):
     return None
 
 def extract_videos(video_soup):
+    '''extract list of videos title, url, and teaser from video_soup'''
     videos = []
     for v in video_soup:
         teaser = v.find('p', {'class': 'teaserText'}).string
@@ -441,6 +448,7 @@ def extract_videos(video_soup):
     return videos
 
 def extract_info(soup):
+    '''extract info about video from soup'''
     rtc = soup.find('div', {'class':'recentTracksCont'})
     s = ''
     for i in rtc.div.findAll('p'):
@@ -453,6 +461,8 @@ def extract_info(soup):
     return s
 
 def print_results(results, verbose=True):
+    '''print list of video:
+    title in bold with a number followed by teaser'''
     for i in range(len(results)):
         print '%s(%d) %s'% (BOLD, i+1, results[i]['title'] + NC)
         if verbose:
@@ -490,18 +500,14 @@ def make_cmd_args(video, options, streaming=False):
         exit(1)
 
     if 'soup' not in video:
-        v, p, i, s = get_rtmp_url(video['url'], quality=options.quality, lang=options.lang)
-        video['video_url'] = v
-        video['player_url'] = p
-        video['info'] = i
-        video['soup'] = s
+        get_video_player_info(video, options)
     output_file = None
     if not streaming:
         output_file = urlparse(video['url']).path.split('/')[-1]
         output_file = output_file.replace('.html', '_%s_%s.flv' % (options.quality, options.lang))
-        cmd_args = '-r %s --swfVfy %s --flv %s' % (video['video_url'], video['player_url'], output_file)
+        cmd_args = '-r %s --swfVfy %s --flv %s' % (video['rtmp_url'], video['player_url'], output_file)
     else:
-        cmd_args = '-r %s --swfVfy %s' % (video['video_url'], video['player_url'])
+        cmd_args = '-r %s --swfVfy %s' % (video['rtmp_url'], video['player_url'])
     if not options.verbose:
         cmd_args += ' --quiet'
 
@@ -513,7 +519,7 @@ def make_cmd_args(video, options, streaming=False):
         else:
             print ':: Downloading to %s' % output_file
     else:
-        print ':: Streaming from %s' % video['video_url']
+        print ':: Streaming from %s' % video['rtmp_url']
 
     return cmd_args
 
@@ -535,7 +541,7 @@ You need to get the url of the page presenting the video on arte+7 site
 or use the search command to get a list of videos
 
 COMMANDS
-    url     show the real url of the video
+    url     show the url of the video
     play    play the video directly
     record  save the video into a local file
     search  search for a video on arte+7
