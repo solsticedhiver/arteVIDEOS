@@ -365,6 +365,7 @@ def get_list(page, lang):
 
 def get_video_player_info(video, options):
     '''get various info from page of video: *modify* video variable'''
+    print ':: Retrieving video data'
     r, p, i, s = get_rtmp_url(video['url'], quality=options.quality, lang=options.lang)
     video['rtmp_url'] = r
     video['player_url'] = p
@@ -568,18 +569,20 @@ COMMANDS
     if args[0] not in ('url', 'play', 'record', 'search'):
         die('Invalid command')
 
-    if args[0] == 'play':
-        play(args[1], options)
-        exit(1)
-
-    elif args[0] == 'url':
+    if args[0] == 'url':
         print get_rtmp_url(args[1], quality=options.quality, lang=options.lang)[0]
 
+    elif args[0] == 'play':
+        play({'url':args[1]}, options)
+        exit(1)
+
     elif args[0] == 'record':
-        record(args[1], options)
+        record({'url':args[1]}, options)
 
     elif args[0] == 'search':
-        results = search(' '.join(args[1:]), options.lang)
+        term = ' '.join(args[1:])
+        print ':: Searching for "%s"' % term
+        results = search(term, options.lang)
         if results is not None:
             print_results(results)
             MyCmd(results, options).cmdloop()
