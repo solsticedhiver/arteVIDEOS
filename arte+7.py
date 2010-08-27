@@ -76,15 +76,16 @@ class MyCmd(Cmd):
         num = int(arg)-1
         if num < 0 or num >= len(self.results):
             raise ArgError
-
-        return 'http://videos.arte.tv'+self.results[num][1]
+        return num
 
     def do_url(self, arg):
         '''url NUMBER
     show the url of the chosen video'''
         try:
-            url_page = self.process_num(arg)
-            print get_rtmp_url(url_page)[0]
+            video = self.results[self.process_num(arg)]
+            if 'video_url' not in video:
+                get_video_player_info(video, self.options)
+            print video['video_url']
         except ValueError:
             print >> stderr, 'Error: wrong argument (must be an integer)'
         except ArgError:
@@ -94,8 +95,10 @@ class MyCmd(Cmd):
         '''player_url NUMBER
     show the Flash player url of the chosen video'''
         try:
-            url_page = self.process_num(arg)
-            print get_rtmp_url(url_page)[1]
+            video = self.results[self.process_num(arg)]
+            if 'player_url' not in video:
+                get_video_player_info(video, self.options)
+            print video['player_url']
         except ValueError:
             print >> stderr, 'Error: wrong argument (must be an integer)'
         except ArgError:
@@ -105,8 +108,10 @@ class MyCmd(Cmd):
         '''info NUMBER
         get info details about chosen video'''
         try:
-            url_page = self.process_num(arg)
-            info(url_page, self.options)
+            video = self.results[self.process_num(arg)]
+            if 'info' not in video:
+                get_video_player_info(video, self.options)
+            print video['info']
         except ValueError:
             print >> stderr, 'Error: wrong argument (must be an integer)'
         except ArgError:
@@ -116,8 +121,8 @@ class MyCmd(Cmd):
         '''play NUMBER
     play the chosen video'''
         try:
-            url_page = self.process_num(arg)
-            play(url_page, self.options)
+            video = self.results[self.process_num(arg)]
+            play(video['url'], self.options)
         except ValueError:
             print >> stderr, 'Error: wrong argument (must be an integer)'
         except ArgError:
@@ -127,8 +132,8 @@ class MyCmd(Cmd):
         '''record NUMBER
     record the chosen video to a local file'''
         try:
-            url_page = self.process_num(arg)
-            record(url_page, self.options)
+            video = self.results[self.process_num(arg)]
+            record(video['url'], self.options)
         except ValueError:
             print >> stderr, 'Error: wrong argument (must be an integer)'
         except ArgError:
@@ -305,6 +310,7 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
     # get the web page
     try:
         soup = BeautifulSoup(urlopen(url_page).read())
+        info = extract_info(soup)
         object_tag = soup.find('object', classid=CLSID)
         # get the player_url straight from it
         player_url = unquote(object_tag.find('embed')['src'])
@@ -332,7 +338,7 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
         # at last the video url
         video_url = soup.urls.find('url', {'quality': quality}).string
 
-        return (video_url, player_url)
+        return (video_url, player_url, info)
     except URLError:
         die('Invalid URL')
 
@@ -354,6 +360,12 @@ def get_list(page, lang):
     except URLError:
         die("Can't get the home page of arte+7")
     return None
+
+def get_video_player_info(video, options):
+    v,p,i = get_rtmp_url(video['url'], quality=options.quality, lang=options.lang)
+    video['video_url'] = v
+    video['player_url'] = p
+    video['info'] = i
 
 def get_channels_programs(lang):
     try:
@@ -385,15 +397,6 @@ def get_channels_programs(lang):
     except URLError:
         die("Can't get the home page of arte+7")
     return None
-
-def info(url_page, options):
-    soup = BeautifulSoup(urlopen(url_page).read())
-    rtc = soup.find('div', {'class':'recentTracksCont'})
-    for i in rtc.div.findAll('p'):
-        print '\n'.join(j.string for j in i if j.string is not None)
-    more = rtc.find('div', {'id':'more'}).findAll('p')
-    for i in more:
-        print ' '.join(j.string for j in i if j.string is not None).replace('\n ', '\n')
 
 def channel(ch, lang, channels):
     try:
@@ -433,14 +436,25 @@ def extract_videos(video_soup):
     for v in video_soup:
         teaser = v.find('p', {'class': 'teaserText'}).string
         a = v.find('h2').a
-        videos.append((a.string, a['href'], teaser))
+        videos.append({'title':a.string, 'url':'http://videos.arte.tv'+a['href'], 'teaser':teaser})
     return videos
+
+def extract_info(soup):
+    rtc = soup.find('div', {'class':'recentTracksCont'})
+    s = ''
+    for i in rtc.div.findAll('p'):
+        s += '\n'.join(j.string for j in i if j.string is not None)
+    s += '\n\n'
+    more = rtc.find('div', {'id':'more'}).findAll('p')
+    for i in more:
+        s += ' '.join(j.string for j in i if j.string is not None).replace('\n ', '\n')
+    return s
 
 def print_results(results, verbose=True):
     for i in range(len(results)):
-        print '%s(%d) %s'% (BOLD, i+1, results[i][0] + NC)
+        print '%s(%d) %s'% (BOLD, i+1, results[i]['title'] + NC)
         if verbose:
-            print '    '+ results[i][2]
+            print '    '+ results[i]['teaser']
 
 def play(url_page, options):
     cmd_args = make_cmd_args(url_page, options, streaming=True)
@@ -473,7 +487,7 @@ def make_cmd_args(url_page, options, streaming=False):
         print >> stderr, 'Error: rtmpdump has not been found'
         exit(1)
 
-    video_url, player_url = get_rtmp_url(url_page, quality=options.quality, lang=options.lang)
+    video_url, player_url, info = get_rtmp_url(url_page, quality=options.quality, lang=options.lang)
     output_file = None
     if not streaming:
         output_file = urlparse(url_page).path.split('/')[-1]
