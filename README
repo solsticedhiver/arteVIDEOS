@@ -39,6 +39,7 @@ COMMANDS:
     quality [sd|hd] display or switch to a different video quality
     channel [NUMBER] display available channels or search video for given channel(s)
     program [NUMBER] display available programs or search video for given program(s)
+    info NUMBER     display details info about given video
     list            list the video of the home page
     help            show this help
     quit            quit the cli
