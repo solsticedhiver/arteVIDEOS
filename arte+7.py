@@ -122,7 +122,7 @@ class MyCmd(Cmd):
     play the chosen video'''
         try:
             video = self.results[self.process_num(arg)]
-            play(video['url'], self.options)
+            play(video, self.options)
         except ValueError:
             print >> stderr, 'Error: wrong argument (must be an integer)'
         except ArgError:
@@ -133,7 +133,7 @@ class MyCmd(Cmd):
     record the chosen video to a local file'''
         try:
             video = self.results[self.process_num(arg)]
-            record(video['url'], self.options)
+            record(video, self.options)
         except ValueError:
             print >> stderr, 'Error: wrong argument (must be an integer)'
         except ArgError:
@@ -309,7 +309,7 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
 
     # get the web page
     try:
-        soup = BeautifulSoup(urlopen(url_page).read())
+        first_soup = soup = BeautifulSoup(urlopen(url_page).read())
         info = extract_info(soup)
         object_tag = soup.find('object', classid=CLSID)
         # get the player_url straight from it
@@ -338,7 +338,7 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
         # at last the video url
         video_url = soup.urls.find('url', {'quality': quality}).string
 
-        return (video_url, player_url, info)
+        return (video_url, player_url, info, first_soup)
     except URLError:
         die('Invalid URL')
 
@@ -362,10 +362,11 @@ def get_list(page, lang):
     return None
 
 def get_video_player_info(video, options):
-    v,p,i = get_rtmp_url(video['url'], quality=options.quality, lang=options.lang)
+    v, p, i, s = get_rtmp_url(video['url'], quality=options.quality, lang=options.lang)
     video['video_url'] = v
     video['player_url'] = p
     video['info'] = i
+    video['soup'] = s
 
 def get_channels_programs(lang):
     try:
@@ -456,8 +457,8 @@ def print_results(results, verbose=True):
         if verbose:
             print '    '+ results[i]['teaser']
 
-def play(url_page, options):
-    cmd_args = make_cmd_args(url_page, options, streaming=True)
+def play(video, options):
+    cmd_args = make_cmd_args(video, options, streaming=True)
     player_cmd = find_player(PLAYERS)
 
     if player_cmd is not None:
@@ -477,24 +478,29 @@ def play(url_page, options):
     else:
         print >> stderr, 'Error: no player has been found.'
 
-def record(url_page, options):
-    cmd_args = make_cmd_args(url_page, options)
+def record(video, options):
+    cmd_args = make_cmd_args(video, options)
     p = Popen(['rtmpdump'] + cmd_args.split(' '))
     p.wait()
 
-def make_cmd_args(url_page, options, streaming=False):
+def make_cmd_args(video, options, streaming=False):
     if not find_in_path(os_environ['PATH'], 'rtmpdump'):
         print >> stderr, 'Error: rtmpdump has not been found'
         exit(1)
 
-    video_url, player_url, info = get_rtmp_url(url_page, quality=options.quality, lang=options.lang)
+    if 'soup' not in video:
+        v, p, i, s = get_rtmp_url(video['url'], quality=options.quality, lang=options.lang)
+        video['video_url'] = v
+        video['player_url'] = p
+        video['info'] = i
+        video['soup'] = s
     output_file = None
     if not streaming:
-        output_file = urlparse(url_page).path.split('/')[-1]
+        output_file = urlparse(video['url']).path.split('/')[-1]
         output_file = output_file.replace('.html', '_%s_%s.flv' % (options.quality, options.lang))
-        cmd_args = '-r %s --swfVfy %s --flv %s' % (video_url, player_url, output_file)
+        cmd_args = '-r %s --swfVfy %s --flv %s' % (video['video_url'], video['player_url'], output_file)
     else:
-        cmd_args = '-r %s --swfVfy %s' % (video_url, player_url)
+        cmd_args = '-r %s --swfVfy %s' % (video['video_url'], video['player_url'])
     if not options.verbose:
         cmd_args += ' --quiet'
 
@@ -506,7 +512,7 @@ def make_cmd_args(url_page, options, streaming=False):
         else:
             print ':: Downloading to %s' % output_file
     else:
-        print ':: Streaming from %s' % video_url
+        print ':: Streaming from %s' % video['video_url']
 
     return cmd_args
 
