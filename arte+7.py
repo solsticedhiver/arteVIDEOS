@@ -72,6 +72,10 @@ class MyCmd(Cmd):
         self.channels = None
         self.programs = None
 
+    def extra_help(self):
+        if len(self.results) == 0:
+            print >> stderr, 'You need to run either a list, search, channel or program command first'
+
     def process_num(self, arg):
         num = int(arg)-1
         if num < 0 or num >= len(self.results):
@@ -90,6 +94,7 @@ class MyCmd(Cmd):
             print >> stderr, 'Error: wrong argument (must be an integer)'
         except ArgError:
             print >> stderr, 'Error: no video with this number'
+            self.extra_help()
 
     def do_player_url(self, arg):
         '''player_url NUMBER
@@ -103,6 +108,7 @@ class MyCmd(Cmd):
             print >> stderr, 'Error: wrong argument (must be an integer)'
         except ArgError:
             print >> stderr, 'Error: no video with this number'
+            self.extra_help()
 
     def do_info(self, arg):
         '''info NUMBER
@@ -116,6 +122,7 @@ class MyCmd(Cmd):
             print >> stderr, 'Error: wrong argument (must be an integer)'
         except ArgError:
             print >> stderr, 'Error: no video with this number'
+            self.extra_help()
 
     def do_play(self, arg):
         '''play NUMBER
@@ -127,6 +134,7 @@ class MyCmd(Cmd):
             print >> stderr, 'Error: wrong argument (must be an integer)'
         except ArgError:
             print >> stderr, 'Error: no video with this number'
+            self.extra_help()
 
     def do_record(self, arg):
         '''record NUMBER
@@ -138,6 +146,7 @@ class MyCmd(Cmd):
             print >> stderr, 'Error: wrong argument (must be an integer)'
         except ArgError:
             print >> stderr, 'Error: no video with this number'
+            self.extra_help()
 
     def do_search(self, arg):
         '''search STRING
@@ -373,7 +382,9 @@ def get_video_player_info(video, options):
     video['soup'] = s
 
 def get_channels_programs(lang):
+    '''get channels and programs from home page'''
     try:
+        print ':: Retrieving channels and programs'
         url = HOME_URL % (lang, lang)
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
         #get the channels
@@ -458,7 +469,7 @@ def extract_info(soup):
     more = rtc.find('div', {'id':'more'}).findAll('p')
     for i in more:
         s += ' '.join(j.string for j in i if j.string is not None).replace('\n ', '\n')
-    s = s.strip('\n')
+    s = s.strip('\n').replace('\n\n\n', '\n\n')
     return s
 
 def print_results(results, verbose=True):
@@ -468,6 +479,8 @@ def print_results(results, verbose=True):
         print '%s(%d) %s'% (BOLD, i+1, results[i]['title'] + NC)
         if verbose:
             print '    '+ results[i]['teaser']
+    if len(results) == 0:
+        print ':: the search returned nothing'
 
 def play(video, options):
     cmd_args = make_cmd_args(video, options, streaming=True)
