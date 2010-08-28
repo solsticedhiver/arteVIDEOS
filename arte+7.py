@@ -66,8 +66,10 @@ class MyCmd(Cmd):
         self.prompt = 'arte+7> '
         self.intro = '\nType "help" to see available commands.'
 
+        # holds last search result from any command (list, channel, program, search)
         self.results = results
         self.options = options
+        # holds the videos from list command
         self.videos = None
         self.channels = None
         self.programs = None
@@ -199,11 +201,17 @@ class MyCmd(Cmd):
             print >> stderr, 'Error: quality could be %s' % ','.join(QUALITY)
 
     def do_list(self, arg):
-        '''list
-    list the video of the home page'''
-        if self.videos is None:
+        '''list [more]
+    list 25 videos from the home page (55 ones with more)'''
+        if arg == 'more':
             page = 1
             self.videos = get_list(page, self.options.lang)
+        elif self.videos is None:
+            c,p,v = get_channels_programs(self.options.lang)
+            if c is not None:
+                self.channels = c
+                self.programs = p
+                self.videos = v
 
         print_results(self.videos)
         self.results = self.videos
@@ -214,10 +222,12 @@ class MyCmd(Cmd):
         if arg == '':
             if self.channels is None:
                 # try to get them from home page
-                c,p = get_channels_programs(self.options.lang)
+                c,p,v = get_channels_programs(self.options.lang)
                 if c is not None:
                     self.channels = c
                     self.programs = p
+                    if self.videos is None:
+                        self.videos = v
                 else:
                     print >> stderr, 'Error: Can\'t retrieve channels'
                     return
@@ -243,10 +253,12 @@ class MyCmd(Cmd):
         if arg == '':
             if self.programs is None:
                 # try to get them from home page
-                c,p = get_channels_programs(self.options.lang)
+                c,p,v = get_channels_programs(self.options.lang)
                 if p is not None:
                     self.programs = p
                     self.channels = c
+                    if self.videos is None:
+                        self.videos = v
                 else:
                     print >> stderr, 'Error: Can\'t retrieve programs'
                     return
@@ -270,19 +282,19 @@ class MyCmd(Cmd):
         '''print the help'''
         if arg == '':
             print '''COMMANDS:
-    url NUMBER      show url of video
-    play NUMBER     play chosen video
-    record NUMBER   download and save video to a local file
-    info NUMBER     display details about given video
-    search STRING   search for a video
-    lang [fr|de|en] display or switch to a different language
-    quality [sd|hd] display or switch to a different video quality
+    url NUMBER       show url of video
+    play NUMBER      play chosen video
+    record NUMBER    download and save video to a local file
+    info NUMBER      display details about given video
+    search STRING    search for a video
+    lang [fr|de|en]  display or switch to a different language
+    quality [sd|hd]  display or switch to a different video quality
     channel [NUMBER] display available channels or search video for given channel(s)
     program [NUMBER] display available programs or search video for given program(s)
-    list            list the video of the home page
-    help            show this help
-    quit            quit the cli
-    exit            exit the cli'''
+    list [more]      list 25 videos from the home page (list 55 ones with more)
+    help             show this help
+    quit             quit the cli
+    exit             exit the cli'''
         else:
             try:
                 print getattr(self, 'do_'+arg).__doc__
@@ -409,7 +421,11 @@ def get_channels_programs(lang):
         else:
             programs = None
 
-        return (channels, programs)
+        # get the videos
+        video_soup = soup.findAll('div', {'class': 'video'})
+        videos = extract_videos(video_soup)
+
+        return (channels, programs, videos)
     except URLError:
         die("Can't get the home page of arte+7")
     return None
