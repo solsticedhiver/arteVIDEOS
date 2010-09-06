@@ -514,9 +514,9 @@ def make_cmd_args(video, options, streaming=False):
     if not streaming:
         output_file = urlparse.urlparse(video['url']).path.split('/')[-1]
         output_file = output_file.replace('.html', '_%s_%s.flv' % (options.quality, options.lang))
-        cmd_args = '--rtmp %s --flv %s' % (video['rtmp_url'], output_file)
+        cmd_args = '--rtmp %s --flv %s --swfVfy %s' % (video['rtmp_url'], output_file, video['player_url'])
     else:
-        cmd_args = '--rtmp %s' % video['rtmp_url']
+        cmd_args = '--rtmp %s --swfVfy %s' % (video['rtmp_url'], video['player_url'])
     if not options.verbose:
         cmd_args += ' --quiet'
 
