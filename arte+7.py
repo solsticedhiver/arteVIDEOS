@@ -23,7 +23,7 @@ except ImportError:
     exit(1)
 from urllib2 import urlopen, URLError, Request
 from urllib import unquote
-from urlparse import urlparse
+import urlparse
 from subprocess import Popen, PIPE
 from os.path import exists as os_path_exists
 from os import environ as os_environ
@@ -336,29 +336,8 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
         # get the player_url straight from it
         player_url = unquote(object_tag.find('embed')['src'])
 
-        # now we need a few jumps to get to the correct url
-        movie_url = object_tag.find('param', {'name':'movie'})
-        # first xml file
-        xml_url = unquote(movie_url['value'].split('videorefFileUrl=')[-1])
-        soup = BeautifulStoneSoup(urlopen(xml_url).read())
-        # second xml file
-        videos_list = soup.findAll('video')
-        videos = {}
-        for v in videos_list:
-            videos[v['lang']] = v['ref']
-        if lang not in videos:
-            print >> stderr, 'The video in not available in the language %s. Using the default one' % lang
-            if DEFAULT_LANG in videos:
-                xml_url = videos[DEFAULT_LANG]
-            else:
-                xml_url = videos.popitem()[1]
-        else:
-            xml_url = videos[lang]
-
-        soup = BeautifulStoneSoup(urlopen(xml_url).read())
-        # at last the video url
-        rtmp_url = soup.urls.find('url', {'quality': quality}).string
-
+        flashvars = urlparse.parse_qs(object_tag.find('param', {'name':'flashvars'})['value'])
+        rtmp_url = flashvars['streamer'][0]+flashvars['file'][0]
         return (rtmp_url, player_url, info, first_soup)
     except URLError:
         die('Invalid URL')
@@ -533,11 +512,11 @@ def make_cmd_args(video, options, streaming=False):
         get_video_player_info(video, options)
     output_file = None
     if not streaming:
-        output_file = urlparse(video['url']).path.split('/')[-1]
+        output_file = urlparse.urlparse(video['url']).path.split('/')[-1]
         output_file = output_file.replace('.html', '_%s_%s.flv' % (options.quality, options.lang))
-        cmd_args = '-r %s --swfVfy %s --flv %s' % (video['rtmp_url'], video['player_url'], output_file)
+        cmd_args = '--rtmp %s --flv %s' % (video['rtmp_url'], output_file)
     else:
-        cmd_args = '-r %s --swfVfy %s' % (video['rtmp_url'], video['player_url'])
+        cmd_args = '--rtmp %s' % video['rtmp_url']
     if not options.verbose:
         cmd_args += ' --quiet'
 
