@@ -336,8 +336,32 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
         # get the player_url straight from it
         player_url = unquote(object_tag.find('embed')['src'])
 
-        flashvars = urlparse.parse_qs(object_tag.find('param', {'name':'flashvars'})['value'])
-        rtmp_url = flashvars['streamer'][0]+flashvars['file'][0]
+        try:
+            # if they decide to use jwPlayer
+            flashvars = urlparse.parse_qs(object_tag.find('param', {'name':'flashvars'})['value'])
+            rtmp_url = flashvars['streamer'][0]+flashvars['file'][0]
+        except TypeError:
+            # the OLD way - we need a few jumps to get to the correct url
+            flashvars = urlparse.parse_qs(object_tag.find('param', {'name':'movie'})['value'])
+            # first xml file
+            soup = BeautifulStoneSoup(urlopen(flashvars['videorefFileUrl'][0]).read())
+            videos_list = soup.findAll('video')
+            videos = {}
+            for v in videos_list:
+                videos[v['lang']] = v['ref']
+            if lang not in videos:
+                print >> stderr, 'The video in not available in the language %s. Using the default one' % lang
+                if DEFAULT_LANG in videos:
+                    xml_url = videos[DEFAULT_LANG]
+                else:
+                    xml_url = videos.popitem()[1]
+            else:
+                xml_url = videos[lang]
+            # second xml file
+            soup = BeautifulStoneSoup(urlopen(xml_url).read())
+            # at last the video url
+            rtmp_url = soup.urls.find('url', {'quality': quality}).string
+
         return (rtmp_url, player_url, info, first_soup)
     except URLError:
         die('Invalid URL')

@@ -1,96 +1,77 @@
 A script to play/record video from Arte+7 catch-up TV site
 
 USAGE
-Usage: arte+7.py url|play|record [OPTIONS] URL
-       arte+7.py search [OPTIONS] STRING...
-       arte+7.py
+    Usage: arte+7.py url|play|record [OPTIONS] URL
+           arte+7.py search [OPTIONS] STRING...
+           arte+7.py
+    
+    Play or record arte+7 videos without a mandatory browser.
+    
+    You need to get the url of the page presenting the video on arte+7 site
+    (so you might need a browser after all) ;-)
+    or use the search command to get a list of videos
+    
+    COMMANDS
+        url     show the url of the video
+        play    play the video directly (NOT IMPLEMENTED YET)
+        record  save the video into a local file
+        search  search for a video on arte+7
+                It will display a numbered list of results and enter
+                a simple command line interpreter
+    
+    Options:
+      -h, --help            show this help message and exit
+      -l LANG, --lang=LANG  language of the video fr, de, en (default: fr)
+      -q QUALITY, --quality=QUALITY
+                            quality of the video sd or hd (default: hd)
+      --quiet               do not show output of rtmpdump
 
-Play or record arte+7 videos without a mandatory browser.
+If you run it without any argument, you enter a simple command line interpreter.
+Here is an example of a session:
 
-You need to get the url of the page presenting the video on arte+7 site
-(so you might need a browser after all) ;-)
-or use the search command to get a list of videos
-
-COMMANDS
-    url     show the url of the video
-    play    play the video directly (NOT IMPLEMENTED YET)
-    record  save the video into a local file
-    search  search for a video on arte+7
-            It will display a numbered list of results and enter
-            a simple command line interpreter
-
-Options:
-  -h, --help            show this help message and exit
-  -l LANG, --lang=LANG  language of the video fr, de, en (default: fr)
-  -q QUALITY, --quality=QUALITY
-                        quality of the video sd or hd (default: hd)
-  --quiet               do not show output of rtmpdump
-
-If you run it without any argument, you enter a simple command line interpreter:
-
-Type "help" to see available commands.
-arte+7> help
-COMMANDS:
-    url NUMBER      show url of video
-    play NUMBER     play chosen video (NOT IMPLEMENTED YET)
-    record NUMBER   download and save video to a local file
-    info NUMBER     display details about given video
-    search STRING   search for a video
-    lang [fr|de|en] display or switch to a different language
-    quality [sd|hd] display or switch to a different video quality
-    channel [NUMBER] display available channels or search video for given channel(s)
-    program [NUMBER] display available programs or search video for given program(s)
-    list            list the video of the home page
-    help            show this help
-    quit            quit the cli
-    exit            exit the cli
-arte+7>
-
-
-EXAMPLE
-
-Type "help" to see available commands.
-arte+7> lang en
-arte+7> channel
-(1) Arts & Culture
-(2) Discovery
-(3) Documentary
-(4) Drama & Cinema
-(5) Environment & Science
-(6) Europe
-(7) Geopolitics & History
-(8) Kids & Family
-(9) News
-(10) Pop Culture & Music
-(11) Society
-arte+7> channel 4
-(1) Pieds nus sur scène
-    Lors d'une audition, un acteur doit faire preuve de talents.
-(2) Mesecina
-    Un jeune homme gravement malade tombe amoureux d'une fille hors de l'hôpital.
-(3) Bleu Fonce
-    Les débuts de la vie en couple quand on a 20 ans.
-(4) Toumaï
-    Les aventures de Toumai et de son ami l'éléphant dans la jungle indienne.
-(5) Le prisonnier (9/17)
-    Le Numéro 6 est invité à participer à un jeu d'échecs humain.
-(6) Le prisonnier (8/17)
-    Après une tentative d'évasion, Numéro 6 se réveille à côté du cadavre d'un homme...
-(7) Le prisonnier (7/17)
-    Le Numéro 6 se réveille dans un Village désert. Tout le monde a disparu...
-(8) Une minute de liberté
-    Le jeune militaire Sebastian profite de manœuvres militaires pour s'éclipser.
-(9) Vos Papiers !
-    Pour en finir avec les clandestins, le pouvoir met en place une procédure d’effacement.
-(10) L'araignée
-    La vie sexuelle de l'araignée : un acte qui peut parfois être fatal !
-(11) Les ventres
-    Une réflexion ironique sur notre mode de consommation et sur les temps modernes.
-(12) Le sans nom
-    Un petit garçon vit dans un microcosmos qui le protège et le retient prisonnier.
-(13) Au coeur de la nuit
-    Rencontre à Venise entre le cinéaste Michael Haneke et l'avocat Ferdinand von Schirach.
-arte+7> play 10
+    $ ./arte+7.py 
+    
+    Type "help" to see available commands.
+    arte+7> help
+    COMMANDS:
+        url NUMBER       show url of video
+        play NUMBER      play chosen video
+        record NUMBER    download and save video to a local file
+        info NUMBER      display details about given video
+        search STRING    search for a video
+        lang [fr|de|en]  display or switch to a different language
+        quality [sd|hd]  display or switch to a different video quality
+        channel [NUMBER] display available channels or search video for given channel(s)
+        program [NUMBER] display available programs or search video for given program(s)
+        list [more]      list 25 videos from the home page (list 55 ones with more)
+        help             show this help
+        quit             quit the cli
+        exit             exit the cli
+    arte+7> list
+    :: Retrieving channels and programs
+    (1) *L' Aventure de la vie*
+        Grâce à leur capacité d'adaptation, les mammifères peuvent vivre sur la planète entière.
+    (2) *Sur les volcans du monde*
+        Sur les pentes des îles-volcans Vanuatu, archipel entre l'Australie et les îles Fidji.
+    [...]
+    (24) *Anvers*
+        Sans emploi, Martin est contraint de vivre chez ses parents avec son épouse et son bébé.
+    (25) *L' Aventure de la vie (1/10)*
+        Comment les animaux et les végétaux parviennent-ils à survivre et à se reproduire ?
+    arte+7> info 25
+    Comment les animaux - mais aussi les végétaux - parviennent-ils à survivre et à se reproduire ? Ce premier épisode nous entraîne à la découverte d'espèces aux techniques plus étonnantes les unes que les autres : des singes capucins qui écrasent des noix de palme à l'aide d'"outils" faits de pierre ; des dauphins qui piègent les poissons en frappant la vase avec leur queue...
+    
+    (Royaume Uni , 2009, 43mn) ARTE F
+    Date de première diffusion: 
+    Lun., 6. sept. 2010, 19h57
+    
+    Date(s) de rediffusion: 
+    Lundi, 13. septembre 2010, 14h00
+    arte+7> url 25
+    rtmp://artestras.fcod.llnwd.net/a3903/o35/MP4:geo/videothek/EUR_DE_FR/arteprod/A7_SGT_ENC_08_040837-001-A_PG_HQ_FR?h=c352be4ebd947ab7023049c681a39dee
+    arte+7> play 25
+    :: Streaming from rtmp://artestras.fcod.llnwd.net/a3903/o35/MP4:geo/videothek/EUR_DE_FR/arteprod/A7_SGT_ENC_08_040837-001-A_PG_HQ_FR?h=c352be4ebd947ab7023049c681a39dee
+    [...]
 
 REQUIREMENTS
 
