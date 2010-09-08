@@ -30,7 +30,7 @@ from os import environ as os_environ
 from optparse import OptionParser
 from cmd import Cmd
 
-VERSION = '0.2.3'
+VERSION = '0.2.3.2'
 DEFAULT_LANG = 'fr'
 QUALITY = ('sd', 'hd')
 DEFAULT_QUALITY = 'hd'
@@ -219,22 +219,20 @@ class MyCmd(Cmd):
     def do_channel(self, arg):
         '''channel [NUMBER] ...
     display available channels or search video for given channel(s)'''
+        if self.channels is None:
+            # try to get them from home page
+            c,p,v = get_channels_programs(self.options.lang)
+            if c is not None:
+                self.channels = c
+                self.programs = p
+                if self.videos is None:
+                    self.videos = v
+            else:
+                print >> stderr, 'Error: Can\'t retrieve channels'
+                return
         if arg == '':
-            if self.channels is None:
-                # try to get them from home page
-                c,p,v = get_channels_programs(self.options.lang)
-                if c is not None:
-                    self.channels = c
-                    self.programs = p
-                    if self.videos is None:
-                        self.videos = v
-                else:
-                    print >> stderr, 'Error: Can\'t retrieve channels'
-                    return
             print '\n'.join('(%d) %s' % (i+1, self.channels[i][0]) for i in range(len(self.channels)))
         else:
-            if self.channels is None:
-                self.do_channel('')
             try:
                 ch = [int(i)-1 for i in arg.split(' ')]
                 for i in ch:
@@ -250,22 +248,20 @@ class MyCmd(Cmd):
     def do_program(self, arg):
         '''program [NUMBER] ...
     display available programs or search video for given program(s)'''
+        if self.programs is None:
+            # try to get them from home page
+            c,p,v = get_channels_programs(self.options.lang)
+            if p is not None:
+                self.programs = p
+                self.channels = c
+                if self.videos is None:
+                    self.videos = v
+            else:
+                print >> stderr, 'Error: Can\'t retrieve programs'
+                return
         if arg == '':
-            if self.programs is None:
-                # try to get them from home page
-                c,p,v = get_channels_programs(self.options.lang)
-                if p is not None:
-                    self.programs = p
-                    self.channels = c
-                    if self.videos is None:
-                        self.videos = v
-                else:
-                    print >> stderr, 'Error: Can\'t retrieve programs'
-                    return
             print '\n'.join('(%d) %s' % (i+1, self.programs[i][0]) for i in range(len(self.programs)))
         else:
-            if self.programs is None:
-                self.do_program('')
             try:
                 pr = [int(i)-1 for i in arg.split(' ')]
                 for i in pr:
