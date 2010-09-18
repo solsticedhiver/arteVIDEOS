@@ -469,7 +469,8 @@ def extract_videos(video_soup):
     '''extract list of videos title, url, and teaser from video_soup'''
     videos = []
     for v in video_soup:
-        teaser = v.find('p', {'class': 'teaserText'}).string
+        teaserNode = v.find('p', {'class': 'teaserText'})
+        teaser = teaserNode.string if teaserNode is not None else ''
         a = v.find('h2').a
         videos.append({'title':a.string, 'url':'http://videos.arte.tv'+a['href'], 'teaser':teaser})
     return videos
