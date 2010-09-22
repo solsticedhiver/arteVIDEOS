@@ -175,10 +175,12 @@ class MyCmd(Cmd):
             print self.options.lang
         elif arg in LANG:
             self.options.lang = arg
-            self.channels = None
-            self.programs = None
-            self.videos = None
-            self.results = []
+            if self.videos is not None:
+                for v in self.videos:
+                    try:
+                        del v['rtmp_url']
+                    except KeyError:
+                        pass
         else:
             print >> stderr, 'Error: lang could be %s' % ','.join(LANG)
 
@@ -197,6 +199,12 @@ class MyCmd(Cmd):
             print self.options.quality
         elif arg in QUALITY:
             self.options.quality = arg
+            if self.videos is not None:
+                for v in self.videos:
+                    try:
+                        del v['rtmp_url']
+                    except KeyError:
+                        pass
         else:
             print >> stderr, 'Error: quality could be %s' % ','.join(QUALITY)
 
@@ -390,7 +398,6 @@ def get_video_player_info(video, options):
     video['rtmp_url'] = r
     video['player_url'] = p
     video['info'] = i
-    video['soup'] = s
 
 def get_channels_programs(lang):
     '''get channels and programs from home page'''
@@ -529,7 +536,7 @@ def make_cmd_args(video, options, streaming=False):
         print >> stderr, 'Error: rtmpdump has not been found'
         exit(1)
 
-    if 'soup' not in video:
+    if 'rtmp_url' not in video:
         get_video_player_info(video, options)
     output_file = None
     if not streaming:
