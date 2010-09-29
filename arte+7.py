@@ -1,4 +1,4 @@
-#!/usr/bin/python
+l#!/usr/bin/python
 # -*- coding: utf8 -*-
 
 #             DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
@@ -27,6 +27,8 @@ import urlparse
 from subprocess import Popen, PIPE
 from os.path import exists as os_path_exists
 from os import environ as os_environ
+from os import getcwd as os_getcwd
+from os import chdir as os_chdir
 from optparse import OptionParser
 from cmd import Cmd
 
@@ -520,8 +522,11 @@ def play(video, options):
         print >> stderr, 'Error: no player has been found.'
 
 def record(video, options):
+    cwd = os_getcwd()
+    os_chdir(option.dldir)
     cmd_args = make_cmd_args(video, options)
     p = Popen(['rtmpdump'] + cmd_args.split(' '))
+    os_chdir(cwd)
     p.wait()
 
 def make_cmd_args(video, options, streaming=False):
@@ -585,9 +590,13 @@ COMMANDS
             action='store', help='quality of the video sd or hd (default: hd)')
     parser.add_option('--verbose', dest='verbose', default=False,
             action='store_true', help='show output of rtmpdump')
+    parser.add_option('-d', '--downloaddir', dest='dldir', type='string',
+            default=os_getcwd(),action='store', help='directory for downloads')
 
     options, args = parser.parse_args()
-
+    
+    if not os_path_exists(dldir):
+        die('Invalid Path')
     if options.lang not in ('fr', 'de', 'en'):
         die('Invalid option')
     if options.quality not in ('sd', 'hd'):
