@@ -384,8 +384,7 @@ def get_list(page, lang):
         url = FILTER_URL % (lang, lang, page)
         request = Request(url, headers={'X-Requested-With': 'XMLHttpRequest'})
         soup = BeautifulSoup(urlopen(request).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-        video_soup = soup.findAll('div', {'class': 'video'})
-        videos = extract_videos(video_soup)
+        videos = extract_videos(soup)
         return videos
     except URLError:
         die("Can't get the home page of arte+7")
@@ -428,8 +427,7 @@ def get_channels_programs(lang):
             programs = None
 
         # get the videos
-        video_soup = soup.findAll('div', {'class': 'video'})
-        videos = extract_videos(video_soup)
+        videos = extract_videos(soup)
 
         return (channels, programs, videos)
     except URLError:
@@ -441,8 +439,7 @@ def channel(ch, lang, channels):
     try:
         url = (FILTER_URL % (lang, lang, 1)) + 'channel-'+','.join('%d' % channels[i][1] for i in ch)  + '-program-'
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-        video_soup = soup.findAll('div', {'class': 'video'})
-        videos = extract_videos(video_soup)
+        videos = extract_videos(soup)
         return videos
     except URLError:
         die("Can't complete the requested search")
@@ -453,8 +450,7 @@ def program(pr, lang, programs):
     try:
         url = (FILTER_URL % (lang, lang, 1)) + 'channel-' + '-program-'+','.join('%d' % programs[i][1] for i in pr)
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-        video_soup = soup.findAll('div', {'class': 'video'})
-        videos = extract_videos(video_soup)
+        videos = extract_videos(soup)
         return videos
     except URLError:
         die("Can't complete the requested search")
@@ -465,16 +461,16 @@ def search(s, lang):
     try:
         url = (SEARCH_URL % (lang, SEARCH_LANG[lang])) + s.replace(' ', '+')
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-        video_soup = soup.findAll('div', {'class': 'video'})
-        videos = extract_videos(video_soup)
+        videos = extract_videos(soup)
         return videos
     except URLError:
         die("Can't complete the requested search")
     return None
 
-def extract_videos(video_soup):
+def extract_videos(soup):
     '''extract list of videos title, url, and teaser from video_soup'''
     videos = []
+    video_soup = soup.findAll('div', {'class': 'video'})
     for v in video_soup:
         teaserNode = v.find('p', {'class': 'teaserText'})
         teaser = teaserNode.string if teaserNode is not None else ''
