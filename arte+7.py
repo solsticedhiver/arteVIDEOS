@@ -38,6 +38,7 @@ VERSION = '0.2.3.2'
 DEFAULT_LANG = 'fr'
 QUALITY = ('sd', 'hd')
 DEFAULT_QUALITY = 'hd'
+DEFAULT_DLDIR = os_getcwd()
 # You could add your favorite player at the beginning of the PLAYERS tuple
 # It must follow the template:
 # ('executable to look for', 'command to read from stdin')
@@ -131,28 +132,30 @@ class MyCmd(Cmd):
             self.extra_help()
 
     def do_play(self, arg):
-        '''play NUMBER
-    play the chosen video'''
-        try:
-            video = self.results[self.process_num(arg)]
-            play(video, self.options)
-        except ValueError:
-            print >> stderr, 'Error: wrong argument (must be an integer)'
-        except ArgError:
-            print >> stderr, 'Error: no video with this number'
-            self.extra_help()
+        '''play NUMBERS
+    play the chosen videos''' # play() is blocking so we can create a "playlist"
+        for i in arg.split():
+            try:
+                video = self.results[self.process_num(arg)]
+                play(video, self.options)
+            except ValueError:
+                print >> stderr, 'Error: wrong argument "'+str(i)+'" (must be an integer)'
+            except ArgError:
+                print >> stderr, 'Error: no video with this number('+str(i)+')'
+                self.extra_help()
 
     def do_record(self, arg):
-        '''record NUMBER
-    record the chosen video to a local file'''
-        try:
-            video = self.results[self.process_num(arg)]
-            record(video, self.options)
-        except ValueError:
-            print >> stderr, 'Error: wrong argument (must be an integer)'
-        except ArgError:
-            print >> stderr, 'Error: no video with this number'
-            self.extra_help()
+        '''record NUMBERS
+    record the chosen videos to a local file'''
+        for i in arg.split():
+            try:
+                video = self.results[self.process_num(i)]
+                record(video, self.options)
+            except ValueError:
+                print >> stderr, 'Error: wrong argument "'+str(i)+'" (must be an integer)'
+            except ArgError:
+                print >> stderr, 'Error: no video with this number('+str(i)+')'
+                self.extra_help()
 
     def do_search(self, arg):
         '''search STRING
@@ -304,8 +307,8 @@ class MyCmd(Cmd):
         if arg == '':
             print '''COMMANDS:
     url NUMBER       show url of video
-    play NUMBER      play chosen video
-    record NUMBER    download and save video to a local file
+    play NUMBERS     play chosen videos
+    record NUMBERS   download and save videos to a local file
     dldir [PATH]     display or change download directory
     info NUMBER      display details about given video
     search STRING    search for a video
