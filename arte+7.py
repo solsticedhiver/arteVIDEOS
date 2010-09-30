@@ -24,21 +24,16 @@ except ImportError:
 from urllib2 import urlopen, URLError, Request
 from urllib import unquote
 import urlparse
+import os
 from subprocess import Popen, PIPE
-from os.path import exists as os_path_exists
-from os.path import expanduser as os_path_expanduser
-from os.path import expandvars as os_path_expandvars
-from os import environ as os_environ
-from os import getcwd as os_getcwd
-from os import chdir as os_chdir
 from optparse import OptionParser
 from cmd import Cmd
 
-VERSION = '0.2.3.2'
+VERSION = '0.2.3.3'
 DEFAULT_LANG = 'fr'
 QUALITY = ('sd', 'hd')
 DEFAULT_QUALITY = 'hd'
-DEFAULT_DLDIR = os_getcwd()
+DEFAULT_DLDIR = os.getcwd()
 # You could add your favorite player at the beginning of the PLAYERS tuple
 # It must follow the template:
 # ('executable to look for', 'command to read from stdin')
@@ -132,30 +127,41 @@ class MyCmd(Cmd):
             self.extra_help()
 
     def do_play(self, arg):
-        '''play NUMBERS
-    play the chosen videos''' # play() is blocking so we can create a "playlist"
+        '''play NUMBER [NUMBER] ...
+    play the chosen videos'''
+        playlist = []
         for i in arg.split():
             try:
-                video = self.results[self.process_num(arg)]
-                play(video, self.options)
+                playlist.append(self.results[self.process_num(i)])
             except ValueError:
-                print >> stderr, 'Error: wrong argument "'+str(i)+'" (must be an integer)'
+                print >> stderr, '"%s": wrong argument, must be an integer' % i
+                return
             except ArgError:
-                print >> stderr, 'Error: no video with this number('+str(i)+')'
+                print >> stderr, 'Error: no video with this number: %s' % i
                 self.extra_help()
+                return
+        print ':: Playing video(s): ' + ', '.join('#%s' % i for i in arg.split())
+        for v in playlist:
+            play(v, self.options)
 
     def do_record(self, arg):
-        '''record NUMBERS
+        '''record NUMBER [NUMBER] ...
     record the chosen videos to a local file'''
+        playlist = []
         for i in arg.split():
             try:
-                video = self.results[self.process_num(i)]
-                record(video, self.options)
+                playlist.append(self.results[self.process_num(i)])
             except ValueError:
-                print >> stderr, 'Error: wrong argument "'+str(i)+'" (must be an integer)'
+                print >> stderr, '"%s": wrong argument, must be an integer' % i
+                return
             except ArgError:
-                print >> stderr, 'Error: no video with this number('+str(i)+')'
+                print >> stderr, 'Error: no video with this number: %d' % i
                 self.extra_help()
+                return
+        print ':: Recording video(s): ' + ', '.join('#%s' % i for i in arg.split())
+        # TODO: do that in parallel ?
+        for v in playlist:
+            record(v, self.options)
 
     def do_search(self, arg):
         '''search STRING
@@ -290,17 +296,16 @@ class MyCmd(Cmd):
                 print >> stderr, 'Error: wrong argument; must be an integer'
 
     def do_dldir(self,arg):
-        '''dldir [PATH] ... display or change download directory'''
+        '''dldir [PATH] ...
+    display or change download directory'''
         if arg == '':
             print self.options.dldir
             return
         arg = expand_path(arg) # resolve environment variables and '~'s
-        if not os_path_exists(arg): #we could also check for write access if you want
+        if not os.path.exists(arg): #we could also check for write access if you want
             print >> stderr, 'Error: wrong argument; must be a valid path'
         else:
             self.options.dldir = arg
-            print arg
-
 
     def do_help(self, arg):
         '''print the help'''
@@ -394,7 +399,7 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
 def find_in_path(path, filename):
     '''is filename in $PATH ?'''
     for i in path.split(':'):
-        if os_path_exists('/'.join([i, filename])):
+        if os.path.exists('/'.join([i, filename])):
             return True
     return False
 
@@ -546,15 +551,15 @@ def play(video, options):
         print >> stderr, 'Error: no player has been found.'
 
 def record(video, options):
-    cwd = os_getcwd()
-    os_chdir(options.dldir)
+    cwd = os.getcwd()
+    os.chdir(options.dldir)
     cmd_args = make_cmd_args(video, options)
     p = Popen(['rtmpdump'] + cmd_args.split(' '))
-    os_chdir(cwd)
+    os.chdir(cwd)
     p.wait()
 
 def make_cmd_args(video, options, streaming=False):
-    if not find_in_path(os_environ['PATH'], 'rtmpdump'):
+    if not find_in_path(os.environ['PATH'], 'rtmpdump'):
         print >> stderr, 'Error: rtmpdump has not been found'
         exit(1)
 
@@ -571,7 +576,7 @@ def make_cmd_args(video, options, streaming=False):
         cmd_args += ' --quiet'
 
     if not streaming:
-        if os_path_exists(output_file):
+        if os.path.exists(output_file):
             # try to resume a download
             cmd_args += ' --resume'
             print ':: Resuming download of %s' % output_file
@@ -584,14 +589,14 @@ def make_cmd_args(video, options, streaming=False):
 
 def expand_path(path):
     if '~' in path:
-        path = os_path_expanduser(path)
+        path = os.path.expanduser(path)
     if ('$' in path) or ('%' in path):
-        path = os_path_expandvars(path)
+        path = os.path.expandvars(path)
     return path
 
 def find_player(d):
     for e, c in d:
-        if find_in_path(os_environ['PATH'], e):
+        if find_in_path(os.environ['PATH'], e):
             return c
     return None
 
@@ -615,18 +620,18 @@ COMMANDS
             a simple command line interpreter'''
 
     parser = OptionParser(usage=usage)
+    parser.add_option('-d', '--downloaddir', dest='dldir', type='string',
+            default=DEFAULT_DLDIR, action='store', help='directory for downloads')
     parser.add_option('-l', '--lang', dest='lang', type='string', default=DEFAULT_LANG,
             action='store', help='language of the video fr, de, en (default: fr)')
     parser.add_option('-q', '--quality', dest='quality', type='string', default=DEFAULT_QUALITY,
             action='store', help='quality of the video sd or hd (default: hd)')
     parser.add_option('--verbose', dest='verbose', default=False,
             action='store_true', help='show output of rtmpdump')
-    parser.add_option('-d', '--downloaddir', dest='dldir', type='string',
-            default=os_getcwd(), action='store', help='directory for downloads')
 
     options, args = parser.parse_args()
-     
-    if not os_path_exists(options.dldir):
+
+    if not os.path.exists(options.dldir):
         die('Invalid Path')
     if options.lang not in ('fr', 'de', 'en'):
         die('Invalid option')
