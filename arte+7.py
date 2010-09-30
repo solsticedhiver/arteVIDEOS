@@ -51,12 +51,12 @@ PLAYERS = (
 
 CLSID = 'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000'
 # with 50 per page but only get 25 because the rest is done with ajax (?)
-HOME_URL = 'http://videos.arte.tv/%s/videos/arte7#/%s/thumb///1/50/'
+HOME_URL = 'http://videos.arte.tv/%s/videos#/tv/thumb///1/25/'
 SEARCH_URL = 'http://videos.arte.tv/%s/do_search/videos/%s?q='
 SEARCH_LANG = {'fr': 'recherche', 'de':'suche', 'en': 'search'}
 LANG = SEARCH_LANG.keys()
 # same remark as above
-FILTER_URL = 'http://videos.arte.tv/%s/do_delegate/videos/arte7/index-3211552,view,asThumbnail.html?hash=%s/thumb///%d/50/'
+FILTER_URL = 'http://videos.arte.tv/%s/do_delegate/videos/index-3188698,view,asThumbnail.html?hash=tv/thumb///%s/50/'
 
 BOLD   = '[1m'
 NC     = '[0m'    # no color
@@ -179,10 +179,12 @@ class MyCmd(Cmd):
             print self.options.lang
         elif arg in LANG:
             self.options.lang = arg
-            self.channels = None
-            self.programs = None
-            self.videos = None
-            self.results = []
+            if self.videos is not None:
+                for v in self.videos:
+                    try:
+                        del v['rtmp_url']
+                    except KeyError:
+                        pass
         else:
             print >> stderr, 'Error: lang could be %s' % ','.join(LANG)
 
@@ -201,6 +203,12 @@ class MyCmd(Cmd):
             print self.options.quality
         elif arg in QUALITY:
             self.options.quality = arg
+            if self.videos is not None:
+                for v in self.videos:
+                    try:
+                        del v['rtmp_url']
+                    except KeyError:
+                        pass
         else:
             print >> stderr, 'Error: quality could be %s' % ','.join(QUALITY)
 
@@ -390,12 +398,9 @@ def find_in_path(path, filename):
 def get_list(page, lang):
     '''get the list of videos from home page'''
     try:
-        # use an ajax request to get all the 50 first videos of page page in (1,2,3)
-        url = FILTER_URL % (lang, lang, page)
-        request = Request(url, headers={'X-Requested-With': 'XMLHttpRequest'})
-        soup = BeautifulSoup(urlopen(request).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-        video_soup = soup.findAll('div', {'class': 'video'})
-        videos = extract_videos(video_soup)
+        url = FILTER_URL % (lang, page)
+        soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
+        videos = extract_videos(soup)
         return videos
     except URLError:
         die("Can't get the home page of arte+7")
@@ -408,13 +413,12 @@ def get_video_player_info(video, options):
     video['rtmp_url'] = r
     video['player_url'] = p
     video['info'] = i
-    video['soup'] = s
 
 def get_channels_programs(lang):
     '''get channels and programs from home page'''
     try:
         print ':: Retrieving channels and programs'
-        url = HOME_URL % (lang, lang)
+        url = HOME_URL % (lang, )
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
         #get the channels
         uls = soup.findAll('ul', {'class': 'channelList'})
@@ -439,8 +443,7 @@ def get_channels_programs(lang):
             programs = None
 
         # get the videos
-        video_soup = soup.findAll('div', {'class': 'video'})
-        videos = extract_videos(video_soup)
+        videos = extract_videos(soup)
 
         return (channels, programs, videos)
     except URLError:
@@ -450,10 +453,9 @@ def get_channels_programs(lang):
 def channel(ch, lang, channels):
     '''get a list of videos for channel ch'''
     try:
-        url = (FILTER_URL % (lang, lang, 1)) + 'channel-'+','.join('%d' % channels[i][1] for i in ch)  + '-program-'
+        url = (FILTER_URL % (lang, 1)) + 'channel-'+','.join('%d' % channels[i][1] for i in ch)  + '-program-'
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-        video_soup = soup.findAll('div', {'class': 'video'})
-        videos = extract_videos(video_soup)
+        videos = extract_videos(soup)
         return videos
     except URLError:
         die("Can't complete the requested search")
@@ -462,10 +464,9 @@ def channel(ch, lang, channels):
 def program(pr, lang, programs):
     '''get a list of videos for program pr'''
     try:
-        url = (FILTER_URL % (lang, lang, 1)) + 'channel-' + '-program-'+','.join('%d' % programs[i][1] for i in pr)
+        url = (FILTER_URL % (lang, 1)) + 'channel-' + '-program-'+','.join('%d' % programs[i][1] for i in pr)
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-        video_soup = soup.findAll('div', {'class': 'video'})
-        videos = extract_videos(video_soup)
+        videos = extract_videos(soup)
         return videos
     except URLError:
         die("Can't complete the requested search")
@@ -476,20 +477,24 @@ def search(s, lang):
     try:
         url = (SEARCH_URL % (lang, SEARCH_LANG[lang])) + s.replace(' ', '+')
         soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-        video_soup = soup.findAll('div', {'class': 'video'})
-        videos = extract_videos(video_soup)
+        videos = extract_videos(soup)
         return videos
     except URLError:
         die("Can't complete the requested search")
     return None
 
-def extract_videos(video_soup):
+def extract_videos(soup):
     '''extract list of videos title, url, and teaser from video_soup'''
     videos = []
+    video_soup = soup.findAll('div', {'class': 'video'})
     for v in video_soup:
         teaserNode = v.find('p', {'class': 'teaserText'})
         teaser = teaserNode.string if teaserNode is not None else ''
-        a = v.find('h2').a
+        try:
+            a = v.find('h2').a
+        except AttributeError:
+            # ignore bottom videos
+            continue
         videos.append({'title':a.string, 'url':'http://videos.arte.tv'+a['href'], 'teaser':teaser})
     return videos
 
@@ -550,7 +555,7 @@ def make_cmd_args(video, options, streaming=False):
         print >> stderr, 'Error: rtmpdump has not been found'
         exit(1)
 
-    if 'soup' not in video:
+    if 'rtmp_url' not in video:
         get_video_player_info(video, options)
     output_file = None
     if not streaming:
