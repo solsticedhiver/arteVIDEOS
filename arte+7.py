@@ -1,4 +1,4 @@
-l#!/usr/bin/python
+#!/usr/bin/python
 # -*- coding: utf8 -*-
 
 #             DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
@@ -26,6 +26,8 @@ from urllib import unquote
 import urlparse
 from subprocess import Popen, PIPE
 from os.path import exists as os_path_exists
+from os.path import expanduser as os_path_expanduser
+from os.path import expandvars as os_path_expandvars
 from os import environ as os_environ
 from os import getcwd as os_getcwd
 from os import chdir as os_chdir
@@ -276,6 +278,19 @@ class MyCmd(Cmd):
             except ValueError:
                 print >> stderr, 'Error: wrong argument; must be an integer'
 
+    def do_dldir(self,arg):
+        '''dldir [PATH] ... display or change download directory'''
+        if arg == '':
+            print self.options.dldir
+            return
+        arg = expand_path(arg) # resolve environment variables and '~'s
+        if not os_path_exists(arg): #we could also check for write access if you want
+            print >> stderr, 'Error: wrong argument; must be a valid path'
+        else:
+            self.options.dldir = arg
+            print arg
+
+
     def do_help(self, arg):
         '''print the help'''
         if arg == '':
@@ -283,6 +298,7 @@ class MyCmd(Cmd):
     url NUMBER       show url of video
     play NUMBER      play chosen video
     record NUMBER    download and save video to a local file
+    dldir [PATH]     display or change download directory
     info NUMBER      display details about given video
     search STRING    search for a video
     lang [fr|de|en]  display or switch to a different language
@@ -523,7 +539,7 @@ def play(video, options):
 
 def record(video, options):
     cwd = os_getcwd()
-    os_chdir(option.dldir)
+    os_chdir(options.dldir)
     cmd_args = make_cmd_args(video, options)
     p = Popen(['rtmpdump'] + cmd_args.split(' '))
     os_chdir(cwd)
@@ -558,6 +574,13 @@ def make_cmd_args(video, options, streaming=False):
 
     return cmd_args
 
+def expand_path(path):
+    if '~' in path:
+        path = os_path_expanduser(path)
+    if ('$' in path) or ('%' in path):
+        path = os_path_expandvars(path)
+    return path
+
 def find_player(d):
     for e, c in d:
         if find_in_path(os_environ['PATH'], e):
@@ -591,11 +614,11 @@ COMMANDS
     parser.add_option('--verbose', dest='verbose', default=False,
             action='store_true', help='show output of rtmpdump')
     parser.add_option('-d', '--downloaddir', dest='dldir', type='string',
-            default=os_getcwd(),action='store', help='directory for downloads')
+            default=os_getcwd(), action='store', help='directory for downloads')
 
     options, args = parser.parse_args()
-    
-    if not os_path_exists(dldir):
+     
+    if not os_path_exists(options.dldir):
         die('Invalid Path')
     if options.lang not in ('fr', 'de', 'en'):
         die('Invalid option')
