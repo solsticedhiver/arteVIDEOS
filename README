@@ -1,16 +1,17 @@
-A script to play/record video from Arte+7 catch-up TV site
+A script to play/record video from arte VIDEOS catch-up TV site
 
 USAGE
-    Usage: arte+7.py url|play|record [OPTIONS] URL
-           arte+7.py search [OPTIONS] STRING...
-           arte+7.py
-    
-    Play or record arte+7 videos without a mandatory browser.
-    
-    You need to get the url of the page presenting the video on arte+7 site
-    (so you might need a browser after all) ;-)
-    or use the search command to get a list of videos
-    
+    Usage: arteVIDEOS.py url|play|record [OPTIONS] URL
+           arteVIDEOS.py search [OPTIONS] STRING...
+           arteVIDEOS.py
+
+    Play or record videos from arte VIDEOS website without a mandatory browser.
+
+    In the first form, you need the url of the video page
+    In the second form, just enter your search term
+    In the last form (without any argument), you enter an interactive interpreter
+    (type help to get a list of them, once in the interpreter)
+
     COMMANDS
         url     show the url of the video
         play    play the video directly (NOT IMPLEMENTED YET)
@@ -18,7 +19,7 @@ USAGE
         search  search for a video on arte+7
                 It will display a numbered list of results and enter
                 a simple command line interpreter
-    
+
     Options:
       -h, --help            show this help message and exit
       -d DLDIR, --downloaddir=DLDIR
@@ -31,27 +32,36 @@ USAGE
 If you run it without any argument, you enter a simple command line interpreter.
 Here is an example of a session:
 
-    $ ./arte+7.py 
-    
+    $ ./arteVIDEOS.py
+
     Type "help" to see available commands.
     arte+7> help
     COMMANDS:
-        url NUMBER       show url of video
-        play NUMBER      play chosen videos
-        record NUMBER    download and save videos to a local file
-        dldir [PATH]     display or change download directory
-        info NUMBER      display details about given video
+        plus7            list videos from arte+7
+        allvideos        list videos from allvideos tab
+        events           list videos from events tab
+        programs         list videos from programs tab
+        channel [NUMBER] display available channels or search video for given channel(s)
         search STRING    search for a video
+
+        next             list videos of the next page
+        previous         list videos of previous page
+
+        url NUMBER       show url of video
+        play NUMBERS     play chosen videos
+        record NUMBERS   download and save videos to a local file
+        info NUMBER      display details about given video
+
+        dldir [PATH]     display or change download directory
         lang [fr|de|en]  display or switch to a different language
         quality [sd|hd]  display or switch to a different video quality
-        channel [NUMBER] display available channels or search video for given channel(s)
-        program [NUMBER] display available programs or search video for given program(s)
-        list [more]      list 25 videos from the home page (list 55 ones with more)
+
         help             show this help
         quit             quit the cli
         exit             exit the cli
-    arte+7> list
-    :: Retrieving channels and programs
+
+    arte+7> plus7
+    :: Retrieving plus7 videos list
     (1) *L' Aventure de la vie*
         Grâce à leur capacité d'adaptation, les mammifères peuvent vivre sur la planète entière.
     (2) *Sur les volcans du monde*
@@ -63,12 +73,12 @@ Here is an example of a session:
         Comment les animaux et les végétaux parviennent-ils à survivre et à se reproduire ?
     arte+7> info 25
     Comment les animaux - mais aussi les végétaux - parviennent-ils à survivre et à se reproduire ? Ce premier épisode nous entraîne à la découverte d'espèces aux techniques plus étonnantes les unes que les autres : des singes capucins qui écrasent des noix de palme à l'aide d'"outils" faits de pierre ; des dauphins qui piègent les poissons en frappant la vase avec leur queue...
-    
+
     (Royaume Uni , 2009, 43mn) ARTE F
-    Date de première diffusion: 
+    Date de première diffusion:
     Lun., 6. sept. 2010, 19h57
-    
-    Date(s) de rediffusion: 
+
+    Date(s) de rediffusion:
     Lundi, 13. septembre 2010, 14h00
     arte+7> url 25
     rtmp://artestras.fcod.llnwd.net/a3903/o35/MP4:geo/videothek/EUR_DE_FR/arteprod/A7_SGT_ENC_08_040837-001-A_PG_HQ_FR?h=c352be4ebd947ab7023049c681a39dee

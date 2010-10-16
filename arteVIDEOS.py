@@ -29,7 +29,7 @@ from subprocess import Popen, PIPE
 from optparse import OptionParser
 from cmd import Cmd
 
-VERSION = '0.2.3.3'
+VERSION = '0.3'
 DEFAULT_LANG = 'fr'
 QUALITY = ('sd', 'hd')
 DEFAULT_QUALITY = 'hd'
@@ -90,7 +90,7 @@ class Navigator(object):
         if self.events is not None:
             return
         try:
-            print ':: Retrieving events'
+            print ':: Retrieving events list'
             url = GENERIC_URL % (self.options.lang, EVENTS_PAGE)
             soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
             # get the events
@@ -133,7 +133,7 @@ class Navigator(object):
         if self.allvideos is not None:
             return
         try:
-            print ':: Retrieving all videos'
+            print ':: Retrieving all videos list'
             url = GENERIC_URL % (self.options.lang, ALL_VIDEOS[self.options.lang])
             soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
             # get the channels
@@ -177,7 +177,7 @@ class Navigator(object):
         if self.programs is not None:
             return
         try:
-            print ':: Retrieving programs'
+            print ':: Retrieving programs list'
             url = GENERIC_URL % (self.options.lang, PROGRAMS[self.options.lang])
             soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
             # get the programs
@@ -210,12 +210,12 @@ class Navigator(object):
         except URLError:
             die("Can't complete the requested search")
 
-    def get_channels_programs(self, force=False):
-        '''get channels and programs from home page'''
-        if self.channels is not None and not force:
+    def get_channels(self):
+        '''get channels from home page'''
+        if self.channels is not None:
             return
         try:
-            print ':: Retrieving channels and programs'
+            print ':: Retrieving channels'
             url = HOME_URL % (self.options.lang, )
             soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
             # get the channels
@@ -228,21 +228,6 @@ class Navigator(object):
                 self.channels = zip(channels, codes)
             else:
                 self.channels = None
-
-            # get the programs
-            uls = soup.findAll('ul', {'class': 'programList'})
-            programs, codes = [], []
-            for u in uls:
-                programs.extend(i.string for i in u.findAll('a'))
-                codes.extend(int(i['value']) for i in u.findAll('input'))
-            if programs != []:
-                self.programs = zip(programs, codes)
-            else:
-                self.programs = None
-
-            # get the videos
-            self.results = extract_videos(soup)
-
         except URLError:
             die("Can't get the home page of arte+7")
         return None
@@ -447,6 +432,7 @@ class MyCmd(Cmd):
     def do_plus7(self, arg):
         '''list [more]
     list 25 videos from the home page'''
+        print ':: Retrieving plus7 videos list'
         self.nav.get_plus7()
         print_results(self.nav.results, page=self.nav.current_page)
 
@@ -484,7 +470,7 @@ class MyCmd(Cmd):
         '''channels [NUMBER] ...
     display available channels or search video for given channel(s)'''
         # try to get them from home page
-        self.nav.get_channels_programs()
+        self.nav.get_channels()
         if arg == '':
             print '\n'.join('(%d) %s' % (i+1, self.nav.channels[i][0]) for i in range(len(self.nav.channels)))
         else:
@@ -528,18 +514,24 @@ class MyCmd(Cmd):
         '''print the help'''
         if arg == '':
             print '''COMMANDS:
+    plus7            list videos from arte+7
+    allvideos        list videos from allvideos tab
+    events           list videos from events tab
+    programs         list videos from programs tab
+    channel [NUMBER] display available channels or search video for given channel(s)
+    search STRING    search for a video
+
+    next             list videos of the next page
+    previous         list videos of previous page
+
     url NUMBER       show url of video
     play NUMBERS     play chosen videos
     record NUMBERS   download and save videos to a local file
     info NUMBER      display details about given video
-    search STRING    search for a video
 
     dldir [PATH]     display or change download directory
     lang [fr|de|en]  display or switch to a different language
     quality [sd|hd]  display or switch to a different video quality
-    channel [NUMBER] display available channels or search video for given channel(s)
-    program [NUMBER] display available programs or search video for given program(s)
-    list [more]      list 25 videos from the home page (list 55 ones with more)
 
     help             show this help
     quit             quit the cli
@@ -748,11 +740,12 @@ def main():
        %prog search [OPTIONS] STRING...
        %prog
 
-Play or record arte+7 videos without a mandatory browser.
+Play or record videos from arte VIDEOS website without a mandatory browser.
 
-You need to get the url of the page presenting the video on arte+7 site
-(so you might need a browser after all) ;-)
-or use the search command to get a list of videos
+In the first form, you need the url of the video page
+In the second form, just enter your search term
+In the last form (without any argument), you enter an interactive interpreter
+(type help to get a list of available commands, once in the interpreter)
 
 COMMANDS
     url     show the url of the video
