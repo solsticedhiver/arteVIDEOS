@@ -21,7 +21,7 @@ try:
 except ImportError:
     print >> stderr, 'Error: you need BeautifulSoup python module'
     exit(1)
-from urllib2 import urlopen, URLError, Request
+import urllib2
 from urllib import unquote
 import urlparse
 import os
@@ -46,21 +46,20 @@ PLAYERS = (
         )
 
 CLSID = 'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000'
-# with 50 per page but only get 25 because the rest is done with ajax (?)
-HOME_URL = 'http://videos.arte.tv/%s/videos#/tv/thumb///1/25/'
-SEARCH_URL = 'http://videos.arte.tv/%s/do_search/videos/%s?q='
-SEARCH_LANG = {'fr': 'recherche', 'de':'suche', 'en': 'search'}
-LANG = SEARCH_LANG.keys()
-# same remark as above
-FILTER_URL = 'http://videos.arte.tv/%s/do_delegate/videos/index-3188698,view,asThumbnail.html'
-
 DOMAIN = 'http://videos.arte.tv'
 VIDEO_PER_PAGE = 25
+HOME_URL = DOMAIN + '/%%s/videos#/tv/thumb///1/%d/' % VIDEO_PER_PAGE
+SEARCH_URL = DOMAIN + '/%%s/do_search/videos/%%s/index-3188352,view,searchResult.html?itemsPerPage=%d&pageNr=%%s&q=' % VIDEO_PER_PAGE
+FILTER_URL = DOMAIN + '/%s/do_delegate/videos/index-3188698,view,asThumbnail.html'
+
 QUERY_STRING = '?hash=tv/thumb///%%s/%d/' % VIDEO_PER_PAGE
+SEARCH = {'fr': 'recherche', 'de':'suche', 'en': 'search'}
+LANG = SEARCH.keys()
 ALL_VIDEOS = {'fr':'toutesLesVideos', 'de':'alleVideos', 'en':'allVideos'}
 PROGRAMS = {'fr':'programmes', 'de':'sendungen', 'en':'programs'}
 GENERIC_URL = 'http://videos.arte.tv/%s/videos/%s'
 EVENTS_PAGE = 'events/index-3188672.html'
+HIST_CMD = ('plus7', 'programs', 'events', 'allvideos', 'search')
 
 BOLD   = '[1m'
 NC     = '[0m'    # no color
@@ -70,20 +69,21 @@ class Navigator(object):
         self.options = options
         self.events = None
         self.allvideos = None
-        self.channels = None
         self.programs = None
         self.more = False
         self.last_cmd = ''
-        self.current_page = 1
-        # holds last search result from any command (list, channel, program, search)
+        self.page = 0
+
+        # holds last search result from any command (list, program, search)
         self.results = []
 
     def __getitem__(self, key):
-        return self.results[int(key)-1]
+        indx = int(key)-1
+        return self.results[indx/VIDEO_PER_PAGE][indx % VIDEO_PER_PAGE]
 
     def extra_help(self):
         if len(self.results) == 0:
-            print >> stderr, 'You need to run either a list, search, channel or program command first'
+            print >> stderr, 'You need to run either a list, search or program command first'
 
     def get_events(self):
         '''get events'''
@@ -92,7 +92,7 @@ class Navigator(object):
         try:
             print ':: Retrieving events list'
             url = GENERIC_URL % (self.options.lang, EVENTS_PAGE)
-            soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
+            soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
             # get the events
             lis = soup.find('div', {'id': 'listChannel'}).findAll('li')
             events, urls = [], []
@@ -104,7 +104,7 @@ class Navigator(object):
                 self.events = zip(events, urls)
             else:
                 self.events = None
-        except URLError:
+        except urllib2.URLError:
             die("Can't get the home page of arte+7")
         return None
 
@@ -112,20 +112,21 @@ class Navigator(object):
         '''get a list of videos for given event'''
         ev = int(arg) - 1
         if not self.more:
-            self.current_page = 1
+            self.page = 0
+            self.results = []
         try:
             url = DOMAIN + self.events[ev][1]
-            soup = unicode(BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES))
+            soup = unicode(BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES))
             try:
                 start = soup.index('thumbnailViewUrl: "')+19
             except ValueError:
                 print >> stderr, 'Error: when parsing the page'
-                self.results = []
+                self.results[self.page] = []
                 return
-            url = DOMAIN + soup[start:soup.index('"', start)] + QUERY_STRING % self.current_page
-            soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-            self.results = extract_videos(soup)
-        except URLError:
+            url = DOMAIN + soup[start:soup.index('"', start)] + QUERY_STRING % (self.page+1,)
+            soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
+            self.results.append(extract_videos(soup))
+        except urllib2.URLError:
             die("Can't complete the requested search")
 
     def get_allvideos(self):
@@ -135,7 +136,7 @@ class Navigator(object):
         try:
             print ':: Retrieving all videos list'
             url = GENERIC_URL % (self.options.lang, ALL_VIDEOS[self.options.lang])
-            soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
+            soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
             # get the channels
             lis = soup.find('div', {'id': 'listChannel'}).findAll('li')
             allvideos, urls = [], []
@@ -147,7 +148,7 @@ class Navigator(object):
                 self.allvideos = zip(allvideos, urls)
             else:
                 self.allvideos = None
-        except URLError:
+        except urllib2.URLError:
             die("Can't get the home page of arte+7")
         return None
 
@@ -155,22 +156,22 @@ class Navigator(object):
         '''get a list of videos for given event'''
         v = int(arg) - 1
         if not self.more:
-            self.current_page = 1
+            self.page = 0
+            self.results = []
         try:
             url = DOMAIN + self.allvideos[v][1]
-            soup = unicode(BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES))
+            soup = unicode(BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES))
             try:
                 start = soup.index('thumbnailViewUrl: "')+19
             except ValueError:
                 print >> stderr, 'Error: when parsing the page'
-                self.results = []
+                self.results[self.page-1] = []
                 return
-            url = DOMAIN + soup[start:soup.index('"', start)] + QUERY_STRING % self.current_page
-            soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-            self.results = extract_videos(soup)
-        except URLError:
+            url = DOMAIN + soup[start:soup.index('"', start)] + QUERY_STRING % (self.page+1,)
+            soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
+            self.results.append(extract_videos(soup))
+        except urllib2.URLError:
             die("Can't complete the requested search")
-
 
     def get_programs(self):
         '''get programs'''
@@ -179,7 +180,7 @@ class Navigator(object):
         try:
             print ':: Retrieving programs list'
             url = GENERIC_URL % (self.options.lang, PROGRAMS[self.options.lang])
-            soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
+            soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
             # get the programs
             lis = soup.find('div', {'id': 'listChannel'}).findAll('li')
             programs, urls = [], []
@@ -191,7 +192,7 @@ class Navigator(object):
                 self.programs = zip(programs, urls)
             else:
                 self.programs = None
-        except URLError:
+        except urllib2.URLError:
             die("Can't get the home page of arte+7")
         return None
 
@@ -199,78 +200,48 @@ class Navigator(object):
         '''get a list of videos for given program'''
         pr = int(arg) - 1
         if not self.more:
-            self.current_page = 1
+            self.page = 0
+            self.results = []
         try:
             url = DOMAIN + self.programs[pr][1]
-            soup = unicode(BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES))
+            soup = unicode(BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES))
             start = soup.index('thumbnailViewUrl: "')+19
-            url = DOMAIN + soup[start:soup.index('"', start)] + QUERY_STRING % self.current_page
-            soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-            self.results = extract_videos(soup)
-        except URLError:
-            die("Can't complete the requested search")
-
-    def get_channels(self):
-        '''get channels from home page'''
-        if self.channels is not None:
-            return
-        try:
-            print ':: Retrieving channels'
-            url = HOME_URL % (self.options.lang, )
-            soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-            # get the channels
-            uls = soup.findAll('ul', {'class': 'channelList'})
-            channels, codes = [], []
-            for u in uls:
-                channels.extend(i.string for i in u.findAll('a'))
-                codes.extend(int(i['value']) for i in u.findAll('input'))
-            if channels != []:
-                self.channels = zip(channels, codes)
-            else:
-                self.channels = None
-        except URLError:
-            die("Can't get the home page of arte+7")
-        return None
-
-    def channel(self, arg):
-        '''get a list of videos for channel ch'''
-        ch = [int(i)-1 for i in arg.split(' ')]
-        try:
-            url = FILTER_URL % self.options.lang + QUERY_STRING % self.current_page
-            url += 'channel-'+','.join('%d' % self.channels[i][1] for i in ch)
-            url += '-program-'
-            soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-            self.results = extract_videos(soup)
-        except URLError:
+            url = DOMAIN + soup[start:soup.index('"', start)] + QUERY_STRING % (self.page+1,)
+            soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
+            self.results.append(extract_videos(soup))
+        except urllib2.URLError:
             die("Can't complete the requested search")
 
     def search(self, s):
         '''search videos matching string s'''
+        if not self.more:
+            self.page = 0
+            self.results = []
         try:
-            url = (SEARCH_URL % (self.options.lang, SEARCH_LANG[self.options.lang])) + s.replace(' ', '+')
-            soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-            self.results = extract_videos(soup)
-        except URLError:
+            url = SEARCH_URL % (self.options.lang, SEARCH[self.options.lang], self.page+1) + s.replace(' ', '+')
+            soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
+            self.results.append(extract_videos(soup))
+        except urllib2.URLError:
             die("Can't complete the requested search")
 
     def get_plus7(self):
         '''get the list of videos from url'''
         if not self.more:
-            self.current_page = 1
+            self.page = 0
+            self.results = []
         try:
-            url = FILTER_URL % self.options.lang + QUERY_STRING % self.current_page
-            soup = BeautifulSoup(urlopen(url).read(), convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-            self.results = extract_videos(soup)
-        except URLError:
+            url = FILTER_URL % self.options.lang + QUERY_STRING % (self.page+1,)
+            soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
+            self.results.append(extract_videos(soup))
+        except urllib2.URLError:
             die("Can't get the home page of arte+7")
 
     def clear_info(self):
         self.events = None
         self.allvideos = None
-        self.channels = None
         self.programs = None
         self.last_cmd = ''
-        self.current_page = 1
+        self.page = 0
         self.results = []
 
 class MyCmd(Cmd):
@@ -284,24 +255,25 @@ class MyCmd(Cmd):
             self.nav = nav
 
     def postcmd(self, stop, line):
-        if line.startswith(('events', 'programs', 'allvideos', 'plus7')):
+        if line.startswith(HIST_CMD):
             self.nav.last_cmd = line
         return stop
 
     def do_previous(self, arg):
-        if self.nav.last_cmd.startswith(('programs', 'events', 'allvideos','plus7')) and self.nav.current_page > 1:
-            self.nav.current_page -= 1
-            self.nav.more = True
-            self.onecmd(self.nav.last_cmd)
-            self.nav.more = False
+        if self.nav.last_cmd.startswith(HIST_CMD) and self.nav.page > 0:
+            self.nav.page -= 1
+            print_results(self.nav.results[self.nav.page], page=self.nav.page)
         return False
 
     def do_next(self, arg):
-        if self.nav.last_cmd.startswith(('programs', 'events', 'allvideos','plus7')):
-            self.nav.current_page += 1
-            self.nav.more = True
-            self.onecmd(self.nav.last_cmd)
-            self.nav.more = False
+        if self.nav.last_cmd.startswith(HIST_CMD):
+            self.nav.page += 1
+            if self.nav.page > len(self.nav.results)-1:
+                self.nav.more = True
+                self.onecmd(self.nav.last_cmd)
+                self.nav.more = False
+            else:
+                print_results(self.nav.results[self.nav.page], page=self.nav.page)
         return False
 
     def do_url(self, arg):
@@ -336,7 +308,7 @@ class MyCmd(Cmd):
         '''info NUMBER
         display details about chosen video'''
         try:
-            video = self.nav[int(arg)-(self.nav.current_page-1)*VIDEO_PER_PAGE]
+            video = self.nav[arg]
             if 'info' not in video:
                 get_video_player_info(video, self.nav.options)
             print video['info']
@@ -352,7 +324,7 @@ class MyCmd(Cmd):
         playlist = []
         for i in arg.split():
             try:
-                playlist.append(self.nav[int(i)-VIDEO_PER_PAGE*(self.nav.current_page-1)])
+                playlist.append(self.nav[i])
             except ValueError:
                 print >> stderr, '"%s": wrong argument, must be an integer' % i
                 return
@@ -370,7 +342,7 @@ class MyCmd(Cmd):
         playlist = []
         for i in arg.split():
             try:
-                playlist.append(self.nav[int(i)-VIDEO_PER_PAGE*(self.nav.current_page-1)])
+                playlist.append(self.nav[i])
             except ValueError:
                 print >> stderr, '"%s": wrong argument, must be an integer' % i
                 return
@@ -387,7 +359,7 @@ class MyCmd(Cmd):
         '''search STRING
     search for a given STRING on arte+7 web site'''
         self.nav.search(arg)
-        print_results(self.nav.results)
+        print_results(self.nav.results[self.nav.page], page=self.nav.page)
 
     def complete_lang(self, text, line, begidx, endidx):
         if text == '':
@@ -434,7 +406,7 @@ class MyCmd(Cmd):
     list 25 videos from the home page'''
         print ':: Retrieving plus7 videos list'
         self.nav.get_plus7()
-        print_results(self.nav.results, page=self.nav.current_page)
+        print_results(self.nav.results[self.nav.page], page=self.nav.page)
 
     def do_allvideos(self, arg):
         '''allvideos [NUMBER] ...
@@ -445,7 +417,7 @@ class MyCmd(Cmd):
         else:
             try:
                 self.nav.allvideo(arg)
-                print_results(self.nav.results, page=self.nav.current_page)
+                print_results(self.nav.results[self.nav.page], page=self.nav.page)
             except IndexError:
                 print >> stderr, 'Error: unknown channel'
             except ValueError:
@@ -460,25 +432,9 @@ class MyCmd(Cmd):
         else:
             try:
                 self.nav.event(arg)
-                print_results(self.nav.results, page=self.nav.current_page)
+                print_results(self.nav.results[self.nav.page], page=self.nav.page)
             except IndexError:
-                print >> stderr, 'Error: unknown channel'
-            except ValueError:
-                print >> stderr, 'Error: wrong argument; must be an integer'
-
-    def do_channels(self, arg):
-        '''channels [NUMBER] ...
-    display available channels or search video for given channel(s)'''
-        # try to get them from home page
-        self.nav.get_channels()
-        if arg == '':
-            print '\n'.join('(%d) %s' % (i+1, self.nav.channels[i][0]) for i in range(len(self.nav.channels)))
-        else:
-            try:
-                self.nav.channel(arg)
-                print_results(self.nav.results, page=self.nav.current_page)
-            except IndexError:
-                print >> stderr, 'Error: unknown channel'
+                print >> stderr, 'Error: unknown events'
             except ValueError:
                 print >> stderr, 'Error: wrong argument; must be an integer'
 
@@ -492,7 +448,7 @@ class MyCmd(Cmd):
         else:
             try:
                 self.nav.program(arg)
-                print_results(self.nav.results, page=self.nav.current_page)
+                print_results(self.nav.results[self.nav.page], page=self.nav.page)
             except IndexError:
                 print >> stderr, 'Error: unknown program'
             except ValueError:
@@ -518,7 +474,6 @@ class MyCmd(Cmd):
     allvideos        list videos from allvideos tab
     events           list videos from events tab
     programs         list videos from programs tab
-    channel [NUMBER] display available channels or search video for given channel(s)
     search STRING    search for a video
 
     next             list videos of the next page
@@ -571,7 +526,7 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
 
     # get the web page
     try:
-        first_soup = soup = BeautifulSoup(urlopen(url_page).read())
+        first_soup = soup = BeautifulSoup(urllib2.urlopen(url_page).read())
         info = extract_info(soup)
         object_tag = soup.find('object', classid=CLSID)
         # get the player_url straight from it
@@ -585,7 +540,7 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
             # the OLD way - we need a few jumps to get to the correct url
             flashvars = urlparse.parse_qs(object_tag.find('param', {'name':'movie'})['value'])
             # first xml file
-            soup = BeautifulStoneSoup(urlopen(flashvars['videorefFileUrl'][0]).read())
+            soup = BeautifulStoneSoup(urllib2.urlopen(flashvars['videorefFileUrl'][0]).read())
             videos_list = soup.findAll('video')
             videos = {}
             for v in videos_list:
@@ -599,12 +554,12 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
             else:
                 xml_url = videos[lang]
             # second xml file
-            soup = BeautifulStoneSoup(urlopen(xml_url).read())
+            soup = BeautifulStoneSoup(urllib2.urlopen(xml_url).read())
             # at last the video url
             rtmp_url = soup.urls.find('url', {'quality': quality}).string
 
         return (rtmp_url, player_url, info)
-    except URLError:
+    except urllib2.URLError:
         die('Invalid URL')
 
 def get_video_player_info(video, options):
@@ -651,7 +606,7 @@ def print_results(results, verbose=True, page=1):
     '''print list of video:
     title in bold with a number followed by teaser'''
     for i in range(len(results)):
-        print '%s(%d) %s'% (BOLD, i+VIDEO_PER_PAGE*(page-1)+1, results[i]['title'] + NC)
+        print '%s(%d) %s'% (BOLD, i+1+VIDEO_PER_PAGE*page, results[i]['title'] + NC)
         if verbose:
             print '    '+ results[i]['teaser']
     if len(results) == 0:

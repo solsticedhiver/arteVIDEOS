@@ -41,7 +41,6 @@ Here is an example of a session:
         allvideos        list videos from allvideos tab
         events           list videos from events tab
         programs         list videos from programs tab
-        channel [NUMBER] display available channels or search video for given channel(s)
         search STRING    search for a video
 
         next             list videos of the next page
