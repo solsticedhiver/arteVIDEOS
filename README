@@ -35,7 +35,7 @@ Here is an example of a session:
     $ ./arteVIDEOS.py
 
     Type "help" to see available commands.
-    arte+7> help
+    arteVIDEOS> help
     COMMANDS:
         plus7            list videos from arte+7
         allvideos        list videos from allvideos tab
@@ -58,32 +58,37 @@ Here is an example of a session:
         help             show this help
         quit             quit the cli
         exit             exit the cli
-
-    arte+7> plus7
+    arteVIDEOS> plus7
     :: Retrieving plus7 videos list
-    (1) *L' Aventure de la vie*
-        Grâce à leur capacité d'adaptation, les mammifères peuvent vivre sur la planète entière.
-    (2) *Sur les volcans du monde*
-        Sur les pentes des îles-volcans Vanuatu, archipel entre l'Australie et les îles Fidji.
+    (1) Indonésie
+        Sur l'île de Lembata les garçons doivent chasser la baleine pour passer à l'âge adulte.
     [...]
-    (24) *Anvers*
-        Sans emploi, Martin est contraint de vivre chez ses parents avec son épouse et son bébé.
-    (25) *L' Aventure de la vie (1/10)*
-        Comment les animaux et les végétaux parviennent-ils à survivre et à se reproduire ?
-    arte+7> info 25
-    Comment les animaux - mais aussi les végétaux - parviennent-ils à survivre et à se reproduire ? Ce premier épisode nous entraîne à la découverte d'espèces aux techniques plus étonnantes les unes que les autres : des singes capucins qui écrasent des noix de palme à l'aide d'"outils" faits de pierre ; des dauphins qui piègent les poissons en frappant la vase avec leur queue...
+    (25) Boualem Sansal
+        Portrait de l'écrivain algérien à la recherche de l'identité de son peuple.
+    arteVIDEOS> next
+    :: Retrieving plus7 videos list
+    (26) Philosophie
+        Le toucher nous met de plain-pied dans le réel. Raphaël Enthoven avec Clara Da Silva
+    [...]
+    (50) Au coeur des Alpes
+        Histoire de la coexistence entre les hommes et les animaux dans le massif alpin.
+    arteVIDEOS> info 40
+    :: Retrieving video data
+    Le dessous des cartes explore la face cachée du commerce du bois.
 
-    (Royaume Uni , 2009, 43mn) ARTE F
+    (France, 2010, 12mn) ARTE F
     Date de première diffusion:
-    Lun., 6. sept. 2010, 19h57
+    Sam., 16. oct. 2010, 17h48
 
     Date(s) de rediffusion:
-    Lundi, 13. septembre 2010, 14h00
-    arte+7> url 25
-    rtmp://artestras.fcod.llnwd.net/a3903/o35/MP4:geo/videothek/EUR_DE_FR/arteprod/A7_SGT_ENC_08_040837-001-A_PG_HQ_FR?h=c352be4ebd947ab7023049c681a39dee
-    arte+7> play 25
-    :: Streaming from rtmp://artestras.fcod.llnwd.net/a3903/o35/MP4:geo/videothek/EUR_DE_FR/arteprod/A7_SGT_ENC_08_040837-001-A_PG_HQ_FR?h=c352be4ebd947ab7023049c681a39dee
-    [...]
+    Aujourd'hui à22h30
+    arteVIDEOS> play 40
+    :: Playing video(s): #40
+    :: Streaming from rtmp://artestras.fcod.llnwd.net/a3903/o35/MP4:geo/videothek/EUR_DE_FR/arteprod/A7_SGT_ENC_08_042143-035-A_PG_HQ_FR?h=641b72264e0820cdb6c02e1d7a907c7b
+    arteVIDEOS> record 40
+    :: Recording video(s): #40
+    :: Downloading to le_dessous_des_cartes-3472068_hd_fr.flv
+    arteVIDEOS> exit
 
 REQUIREMENTS
 
