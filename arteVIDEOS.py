@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # -*- coding: utf8 -*-
 
 #             DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
@@ -311,6 +311,7 @@ class MyCmd(Cmd):
             video = self.nav[arg]
             if 'info' not in video:
                 get_video_player_info(video, self.nav.options)
+            print '%s== %s ==%s'% (BOLD, video['title'], NC)
             print video['info']
         except ValueError:
             print >> stderr, 'Error: wrong argument (must be an integer)'
@@ -556,7 +557,11 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
             # second xml file
             soup = BeautifulStoneSoup(urllib2.urlopen(xml_url).read())
             # at last the video url
-            rtmp_url = soup.urls.find('url', {'quality': quality}).string
+            url = soup.urls.find('url', {'quality': quality})
+            if url is None:
+                url = soup.urls.find('url')[0]
+                print >> stderr, "Can't find the desired quality. Using the first one found"
+            rtmp_url = url.string
 
         return (rtmp_url, player_url, info)
     except urllib2.URLError:
