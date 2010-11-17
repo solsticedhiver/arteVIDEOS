@@ -160,15 +160,16 @@ class Navigator(object):
             self.results = []
         try:
             url = DOMAIN + self.allvideos[v][1]
-            soup = unicode(BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES))
-            try:
-                start = soup.index('thumbnailViewUrl: "')+19
-            except ValueError:
-                print >> stderr, 'Error: when parsing the page'
-                self.results[self.page-1] = []
-                return
-            url = DOMAIN + soup[start:soup.index('"', start)] + QUERY_STRING % (self.page+1,)
             soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
+            #soup = unicode(BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES))
+            #try:
+            #    start = soup.index('thumbnailViewUrl: "')+19
+            #except ValueError:
+            #    print >> stderr, 'Error: when parsing the page'
+            #    self.results[self.page-1] = []
+            #    return
+            #url = DOMAIN + soup[start:soup.index('"', start)] + QUERY_STRING % (self.page+1,)
+            #soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
             self.results.append(extract_videos(soup))
         except urllib2.URLError:
             die("Can't complete the requested search")
@@ -348,8 +349,8 @@ class MyCmd(Cmd):
                 print >> stderr, '"%s": wrong argument, must be an integer' % i
                 return
             except IndexError:
-                print >> stderr, 'Error: no video with this number: %d' % i
-                self.extra_help()
+                print >> stderr, 'Error: no video with this number: %s' % i
+                self.nav.extra_help()
                 return
         print ':: Recording video(s): ' + ', '.join('#%s' % i for i in arg.split())
         # TODO: do that in parallel ?
@@ -395,7 +396,7 @@ class MyCmd(Cmd):
         '''quality [sd|hd]
     display or switch to a different quality'''
         if arg == '':
-            print self.options.quality
+            print self.nav.options.quality
         elif arg in QUALITY:
             self.nav.options.quality = arg
             self.nav.clear_info()
