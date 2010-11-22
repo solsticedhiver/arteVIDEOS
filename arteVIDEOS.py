@@ -755,8 +755,9 @@ COMMANDS
         print ':: Searching for "%s"' % term
         nav = Navigator(options)
         nav.search(term)
+        nav.last_cmd = 'search %s' % term
         if nav.results is not None:
-            print_results(nav.results)
+            print_results(nav.results[0])
             MyCmd(options, nav=nav).cmdloop()
 
 if __name__ == '__main__':
