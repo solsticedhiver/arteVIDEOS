@@ -1,6 +1,16 @@
 A script to play/record video from arte VIDEOS catch-up TV site
 
+REQUIREMENTS
+
+* rtmpdump
+* beautifulsoup
+    It is recommanded to use the 3.0.x version of beautifulsoup instead of the 3.1.x version.
+    The 3.1.x version does not parse very well the html from videos.arte.tv. So until 3.2.x is out please use 3.0.x
+* a video player like mplayer, vlc, xine or totem to use the play command.
+Or add your own player in the script. Help is provided
+
 USAGE
+
     Usage: arteVIDEOS.py url|play|record [OPTIONS] URL
            arteVIDEOS.py search [OPTIONS] STRING...
            arteVIDEOS.py
@@ -90,8 +100,3 @@ Here is an example of a session:
     :: Downloading to le_dessous_des_cartes-3472068_hd_fr.flv
     arteVIDEOS> exit
 
-REQUIREMENTS
-
-rtmpdump
-video player like mplayer, vlc, xine or totem to use the play command.
-Or add your own in the script. Help is provided
