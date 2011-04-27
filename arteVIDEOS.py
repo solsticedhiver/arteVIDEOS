@@ -15,11 +15,29 @@
 #
 #   0. You just DO WHAT THE FUCK YOU WANT TO.
 
+########################################################################
+#                           PLAYERS                                    #
+########################################################################
+# You can add your favorite player at the beginning of the PLAYERS tuple
+# The command must read data from stdin
+# The order is significant: the first player available is used
+PLAYERS = (
+        'mplayer -really-quiet -',
+        'vlc -',
+        'xine stdin:/',
+        '/usr/bin/totem --enqueue fd://0', # you could use absolute path for the command too
+        )
+
+########################################################################
+# DO NOT MODIFY below this line unless you know what you are doing     #
+########################################################################
+
+
 from sys import exit, argv, stderr
 try:
     from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
 except ImportError:
-    print >> stderr, 'Error: you need BeautifulSoup python module'
+    print >> stderr, 'Error: you need the BeautifulSoup python module'
     exit(1)
 import urllib2
 from urllib import unquote
@@ -29,36 +47,27 @@ from subprocess import Popen, PIPE
 from optparse import OptionParser
 from cmd import Cmd
 
-VERSION = '0.3'
+VERSION = '0.3.1'
 DEFAULT_LANG = 'fr'
 QUALITY = ('sd', 'hd')
 DEFAULT_QUALITY = 'hd'
 DEFAULT_DLDIR = os.getcwd()
-# You could add your favorite player at the beginning of the PLAYERS tuple
-# It must follow the template:
-# ('executable to look for', 'command to read from stdin')
-# the order is significant i.e. the players are looked for in this order
-PLAYERS = (
-        ('mplayer', 'mplayer -really-quiet -'),
-        ('vlc', 'vlc -'),
-        ('xine', 'xine stdin:/'),
-        ('totem', 'totem fd://0'),
-        )
 
 CLSID = 'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000'
-DOMAIN = 'http://videos.arte.tv'
 VIDEO_PER_PAGE = 25
+DOMAIN = 'http://videos.arte.tv'
+GENERIC_URL = DOMAIN + '/%s/videos/%s'
 HOME_URL = DOMAIN + '/%%s/videos#/tv/thumb///1/%d/' % VIDEO_PER_PAGE
 SEARCH_URL = DOMAIN + '/%%s/do_search/videos/%%s/index-3188352,view,searchResult.html?itemsPerPage=%d&pageNr=%%s&q=' % VIDEO_PER_PAGE
 FILTER_URL = DOMAIN + '/%s/do_delegate/videos/index-3188698,view,asThumbnail.html'
 
 QUERY_STRING = '?hash=tv/thumb///%%s/%d/' % VIDEO_PER_PAGE
+EVENTS_PAGE = 'events/index-3188672.html'
+
 SEARCH = {'fr': 'recherche', 'de':'suche', 'en': 'search'}
 LANG = SEARCH.keys()
 ALL_VIDEOS = {'fr':'toutesLesVideos', 'de':'alleVideos', 'en':'allVideos'}
 PROGRAMS = {'fr':'programmes', 'de':'sendungen', 'en':'programs'}
-GENERIC_URL = 'http://videos.arte.tv/%s/videos/%s'
-EVENTS_PAGE = 'events/index-3188672.html'
 HIST_CMD = ('plus7', 'programs', 'events', 'allvideos', 'search')
 
 BOLD   = '[1m'
@@ -620,6 +629,9 @@ def print_results(results, verbose=True, page=1):
 
 def play(video, options):
     cmd_args = make_cmd_args(video, options, streaming=True)
+    if 'nogeo/carton_23h' in video['rtmp_url']:
+        print >> stderr, 'Error: This video is only available between 23:00 and 05:00'
+        return
     player_cmd = find_player(PLAYERS)
 
     if player_cmd is not None:
@@ -643,6 +655,9 @@ def record(video, options):
     cwd = os.getcwd()
     os.chdir(options.dldir)
     cmd_args = make_cmd_args(video, options)
+    if 'nogeo/carton_23h' in video['rtmp_url']:
+        print >> stderr, 'Error: This video is only available between 23:00 and 05:00'
+        return
     p = Popen(['rtmpdump'] + cmd_args.split(' '))
     os.chdir(cwd)
     p.wait()
@@ -690,10 +705,14 @@ def find_in_path(path, filename):
             return True
     return False
 
-def find_player(d):
-    for e, c in d:
-        if find_in_path(os.environ['PATH'], e):
-            return c
+def find_player(players):
+    for p in players:
+        cmd = p.split(' ')[0]
+        if cmd.startswith('/') and os.path.isfile(cmd):
+            return p
+        else:
+            if find_in_path(os.environ['PATH'], cmd):
+                return p
     return None
 
 def main():
