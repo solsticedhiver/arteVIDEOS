@@ -10,8 +10,7 @@ WARNING:
 
 NOTES:
 	Most of the downloaded videos are in the flv format and contains h264/aac streams.
-	You can easily convert them to another format without reencoding. For example, to convert to mp4 format:
-		ffmpeg -i myvideo.flv -acodec copy -vcodec copy myvideo.mp4
+	The script attempts to automatically convert to mp4 format without reencoding, if you have ffmpeg installed.
 
 REQUIREMENTS
 

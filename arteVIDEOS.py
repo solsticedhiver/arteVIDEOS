@@ -43,7 +43,7 @@ import urllib2
 from urllib import unquote
 import urlparse
 import os
-from subprocess import Popen, PIPE
+import subprocess
 from optparse import OptionParser
 from cmd import Cmd
 
@@ -635,8 +635,8 @@ def play(video, options):
     player_cmd = find_player(PLAYERS)
 
     if player_cmd is not None:
-        p1 = Popen(['rtmpdump'] + cmd_args.split(' '), stdout=PIPE)
-        p2 = Popen(player_cmd.split(' '), stdin=p1.stdout, stderr=PIPE)
+        p1 = subprocess.Popen(['rtmpdump'] + cmd_args.split(' '), stdout=subprocess.PIPE)
+        p2 = subprocess.Popen(player_cmd.split(' '), stdin=p1.stdout, stderr=subprocess.PIPE)
         p2.wait()
         # kill the zombie rtmpdump
         try:
@@ -658,9 +658,25 @@ def record(video, options):
     if 'nogeo/carton_23h' in video['rtmp_url']:
         print >> stderr, 'Error: This video is only available between 23:00 and 05:00'
         return
-    p = Popen(['rtmpdump'] + cmd_args.split(' '))
+    p = subprocess.Popen(['rtmpdump'] + cmd_args.split(' '))
     os.chdir(cwd)
     p.wait()
+
+    # recreate output file name to convert to mp4
+    output_flv = urlparse.urlparse(video['url']).path.split('/')[-1]
+    output_flv = output_flv.replace('.html', '_%s_%s.flv' % (options.quality, options.lang))
+    output_mp4 = output_flv.replace('.flv', '.mp4')
+
+    cmd = 'ffmpeg -v quiet -n -i %s -acodec copy -vcodec copy %s' % (output_flv, output_mp4)
+    print ':: Converting to mp4 format'
+    try:
+        subprocess.check_call(cmd.split(' '))
+        os.unlink(os.path.join(cwd, output_flv))
+    except OSError:
+        print >> stderr, 'Error: ffmpeg command not found. Conversion aborted.'
+    except subprocess.CalledProcessError:
+        print >> stderr, 'Error: conversion failed.'
+        os.unlink(os.path.join(cwd, output_mp4))
 
 def make_cmd_args(video, options, streaming=False):
     if not find_in_path(os.environ['PATH'], 'rtmpdump'):
