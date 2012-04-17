@@ -28,6 +28,8 @@ PLAYERS = (
         '/usr/bin/totem --enqueue fd://0', # you could use absolute path for the command too
         )
 
+DEFAULT_LANG = 'fr'
+DEFAULT_QUALITY = 'hd'
 ########################################################################
 # DO NOT MODIFY below this line unless you know what you are doing     #
 ########################################################################
@@ -47,9 +49,7 @@ from optparse import OptionParser
 from cmd import Cmd
 
 VERSION = '0.3.2'
-DEFAULT_LANG = 'fr'
 QUALITY = ('sd', 'hd')
-DEFAULT_QUALITY = 'hd'
 DEFAULT_DLDIR = os.getcwd()
 
 CLSID = 'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000'
