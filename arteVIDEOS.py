@@ -32,13 +32,12 @@ PLAYERS = (
 # DO NOT MODIFY below this line unless you know what you are doing     #
 ########################################################################
 
-
-from sys import exit, argv, stderr
+import sys
 try:
     from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
 except ImportError:
-    print >> stderr, 'Error: you need the BeautifulSoup python module'
-    exit(1)
+    print >> sys.stderr, 'Error: you need the BeautifulSoup(v3) python module'
+    sys.exit(1)
 import urllib2
 from urllib import unquote
 import urlparse
@@ -47,7 +46,7 @@ import subprocess
 from optparse import OptionParser
 from cmd import Cmd
 
-VERSION = '0.3.1'
+VERSION = '0.3.2'
 DEFAULT_LANG = 'fr'
 QUALITY = ('sd', 'hd')
 DEFAULT_QUALITY = 'hd'
@@ -92,7 +91,7 @@ class Navigator(object):
 
     def extra_help(self):
         if len(self.results) == 0:
-            print >> stderr, 'You need to run either a list, search or program command first'
+            print >> sys.stderr, 'You need to run either a list, search or program command first'
 
     def get_events(self):
         '''get events'''
@@ -129,7 +128,7 @@ class Navigator(object):
             try:
                 start = soup.index('thumbnailViewUrl: "')+19
             except ValueError:
-                print >> stderr, 'Error: when parsing the page'
+                print >> sys.stderr, 'Error: when parsing the page'
                 self.results[self.page] = []
                 return
             url = DOMAIN + soup[start:soup.index('"', start)] + QUERY_STRING % (self.page+1,)
@@ -174,7 +173,7 @@ class Navigator(object):
             #try:
             #    start = soup.index('thumbnailViewUrl: "')+19
             #except ValueError:
-            #    print >> stderr, 'Error: when parsing the page'
+            #    print >> sys.stderr, 'Error: when parsing the page'
             #    self.results[self.page-1] = []
             #    return
             #url = DOMAIN + soup[start:soup.index('"', start)] + QUERY_STRING % (self.page+1,)
@@ -295,9 +294,9 @@ class MyCmd(Cmd):
                 get_video_player_info(video, self.nav.options)
             print video['rtmp_url']
         except ValueError:
-            print >> stderr, 'Error: wrong argument (must be an integer)'
+            print >> sys.stderr, 'Error: wrong argument (must be an integer)'
         except IndexError:
-            print >> stderr, 'Error: no video with this number'
+            print >> sys.stderr, 'Error: no video with this number'
             self.nav.extra_help()
 
     def do_player_url(self, arg):
@@ -309,9 +308,9 @@ class MyCmd(Cmd):
                 get_video_player_info(video, self.nav.options)
             print video['player_url']
         except ValueError:
-            print >> stderr, 'Error: wrong argument (must be an integer)'
+            print >> sys.stderr, 'Error: wrong argument (must be an integer)'
         except IndexError:
-            print >> stderr, 'Error: no video with this number'
+            print >> sys.stderr, 'Error: no video with this number'
             self.nav.extra_help()
 
     def do_info(self, arg):
@@ -324,9 +323,9 @@ class MyCmd(Cmd):
             print '%s== %s ==%s'% (BOLD, video['title'], NC)
             print video['info']
         except ValueError:
-            print >> stderr, 'Error: wrong argument (must be an integer)'
+            print >> sys.stderr, 'Error: wrong argument (must be an integer)'
         except IndexError:
-            print >> stderr, 'Error: no video with this number'
+            print >> sys.stderr, 'Error: no video with this number'
             self.nav.extra_help()
 
     def do_play(self, arg):
@@ -337,10 +336,10 @@ class MyCmd(Cmd):
             try:
                 playlist.append(self.nav[i])
             except ValueError:
-                print >> stderr, '"%s": wrong argument, must be an integer' % i
+                print >> sys.stderr, '"%s": wrong argument, must be an integer' % i
                 return
             except IndexError:
-                print >> stderr, 'Error: no video with this number: %s' % i
+                print >> sys.stderr, 'Error: no video with this number: %s' % i
                 self.nav.extra_help()
                 return
         print ':: Playing video(s): ' + ', '.join('#%s' % i for i in arg.split())
@@ -355,10 +354,10 @@ class MyCmd(Cmd):
             try:
                 playlist.append(self.nav[i])
             except ValueError:
-                print >> stderr, '"%s": wrong argument, must be an integer' % i
+                print >> sys.stderr, '"%s": wrong argument, must be an integer' % i
                 return
             except IndexError:
-                print >> stderr, 'Error: no video with this number: %s' % i
+                print >> sys.stderr, 'Error: no video with this number: %s' % i
                 self.nav.extra_help()
                 return
         print ':: Recording video(s): ' + ', '.join('#%s' % i for i in arg.split())
@@ -391,7 +390,7 @@ class MyCmd(Cmd):
             self.nav.options.lang = arg
             self.nav.clear_info()
         else:
-            print >> stderr, 'Error: lang could be %s' % ','.join(LANG)
+            print >> sys.stderr, 'Error: lang could be %s' % ','.join(LANG)
 
     def complete_quality(self, text, line, begidx, endidx):
         if text == '':
@@ -410,7 +409,7 @@ class MyCmd(Cmd):
             self.nav.options.quality = arg
             self.nav.clear_info()
         else:
-            print >> stderr, 'Error: quality could be %s' % ','.join(QUALITY)
+            print >> sys.stderr, 'Error: quality could be %s' % ','.join(QUALITY)
 
     def do_plus7(self, arg):
         '''list [more]
@@ -430,9 +429,9 @@ class MyCmd(Cmd):
                 self.nav.allvideo(arg)
                 print_results(self.nav.results[self.nav.page], page=self.nav.page)
             except IndexError:
-                print >> stderr, 'Error: unknown channel'
+                print >> sys.stderr, 'Error: unknown channel'
             except ValueError:
-                print >> stderr, 'Error: wrong argument; must be an integer'
+                print >> sys.stderr, 'Error: wrong argument; must be an integer'
 
     def do_events(self, arg):
         '''events [NUMBER] ...
@@ -445,9 +444,9 @@ class MyCmd(Cmd):
                 self.nav.event(arg)
                 print_results(self.nav.results[self.nav.page], page=self.nav.page)
             except IndexError:
-                print >> stderr, 'Error: unknown events'
+                print >> sys.stderr, 'Error: unknown events'
             except ValueError:
-                print >> stderr, 'Error: wrong argument; must be an integer'
+                print >> sys.stderr, 'Error: wrong argument; must be an integer'
 
     def do_programs(self, arg):
         '''programs [NUMBER] ...
@@ -461,9 +460,9 @@ class MyCmd(Cmd):
                 self.nav.program(arg)
                 print_results(self.nav.results[self.nav.page], page=self.nav.page)
             except IndexError:
-                print >> stderr, 'Error: unknown program'
+                print >> sys.stderr, 'Error: unknown program'
             except ValueError:
-                print >> stderr, 'Error: wrong argument; must be an integer'
+                print >> sys.stderr, 'Error: wrong argument; must be an integer'
 
     def do_dldir(self,arg):
         '''dldir [PATH] ...
@@ -473,7 +472,7 @@ class MyCmd(Cmd):
             return
         arg = expand_path(arg) # resolve environment variables and '~'s
         if not os.path.exists(arg):
-            print >> stderr, 'Error: wrong argument; must be a valid path'
+            print >> sys.stderr, 'Error: wrong argument; must be a valid path'
         else:
             self.nav.options.dldir = arg
 
@@ -506,7 +505,7 @@ class MyCmd(Cmd):
             try:
                 print getattr(self, 'do_'+arg).__doc__
             except AttributeError:
-                print >> stderr, 'Error: no help for command %s' % arg
+                print >> sys.stderr, 'Error: no help for command %s' % arg
 
     def do_quit(self, arg):
         '''quit the command line interpreter'''
@@ -522,14 +521,14 @@ class MyCmd(Cmd):
         return True
 
     def default(self, arg):
-        print >> stderr, 'Error: don\'t know how to %s' % arg
+        print >> sys.stderr, 'Error: don\'t know how to %s' % arg
 
     def emptyline(self):
         pass
 
 def die(msg):
-    print >> stderr, 'Error: %s. See %s --help' % (msg, argv[0])
-    exit(1)
+    print >> sys.stderr, 'Error: %s. See %s --help' % (msg, sys.argv[0])
+    sys.exit(1)
 
 def get_rtmp_url(url_page, quality='hd', lang='fr'):
     '''get the rtmp url of the video and player url and info about video and soup'''
@@ -557,7 +556,7 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
             for v in videos_list:
                 videos[v['lang']] = v['ref']
             if lang not in videos:
-                print >> stderr, 'The video in not available in the language %s. Using the default one' % lang
+                print >> sys.stderr, 'The video in not available in the language %s. Using the default one' % lang
                 if DEFAULT_LANG in videos:
                     xml_url = videos[DEFAULT_LANG]
                 else:
@@ -570,7 +569,7 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
             url = soup.urls.find('url', {'quality': quality})
             if url is None:
                 url = soup.urls.find('url')[0]
-                print >> stderr, "Can't find the desired quality. Using the first one found"
+                print >> sys.stderr, "Can't find the desired quality. Using the first one found"
             rtmp_url = url.string
 
         return (rtmp_url, player_url, info)
@@ -630,7 +629,7 @@ def print_results(results, verbose=True, page=1):
 def play(video, options):
     cmd_args = make_cmd_args(video, options, streaming=True)
     if 'nogeo/carton_23h' in video['rtmp_url']:
-        print >> stderr, 'Error: This video is only available between 23:00 and 05:00'
+        print >> sys.stderr, 'Error: This video is only available between 23:00 and 05:00'
         return
     player_cmd = find_player(PLAYERS)
 
@@ -649,39 +648,44 @@ def play(video, options):
             kill(p1.pid, SIGKILL)
             waitpid(p1.pid, 0)
     else:
-        print >> stderr, 'Error: no player has been found.'
+        print >> sys.stderr, 'Error: no player has been found.'
 
 def record(video, options):
     cwd = os.getcwd()
     os.chdir(options.dldir)
     cmd_args = make_cmd_args(video, options)
     if 'nogeo/carton_23h' in video['rtmp_url']:
-        print >> stderr, 'Error: This video is only available between 23:00 and 05:00'
+        print >> sys.stderr, 'Error: This video is only available between 23:00 and 05:00'
         return
     p = subprocess.Popen(['rtmpdump'] + cmd_args.split(' '))
-    os.chdir(cwd)
     p.wait()
 
+    # Convert to mp4
     # recreate output file name to convert to mp4
     output_flv = urlparse.urlparse(video['url']).path.split('/')[-1]
     output_flv = output_flv.replace('.html', '_%s_%s.flv' % (options.quality, options.lang))
     output_mp4 = output_flv.replace('.flv', '.mp4')
 
-    cmd = 'ffmpeg -v quiet -n -i %s -acodec copy -vcodec copy %s' % (output_flv, output_mp4)
+    cmd = 'ffmpeg -v -10 -i %s -acodec copy -vcodec copy %s' % (output_flv, output_mp4)
     print ':: Converting to mp4 format'
+    is_file_present = os.path.isfile(output_mp4)
     try:
         subprocess.check_call(cmd.split(' '))
-        os.unlink(os.path.join(cwd, output_flv))
+        os.unlink(output_flv)
     except OSError:
-        print >> stderr, 'Error: ffmpeg command not found. Conversion aborted.'
+        print >> sys.stderr, 'Error: ffmpeg command not found. Conversion aborted.'
     except subprocess.CalledProcessError:
-        print >> stderr, 'Error: conversion failed.'
-        os.unlink(os.path.join(cwd, output_mp4))
+        print >> sys.stderr, 'Error: conversion failed.'
+        # delete file if it was not there before conversion process started
+        if os.path.isfile(output_mp4) and not is_file_present:
+            os.unlink(output_mp4)
+
+    os.chdir(cwd)
 
 def make_cmd_args(video, options, streaming=False):
     if not find_in_path(os.environ['PATH'], 'rtmpdump'):
-        print >> stderr, 'Error: rtmpdump has not been found'
-        exit(1)
+        print >> sys.stderr, 'Error: rtmpdump has not been found'
+        sys.exit(1)
 
     if 'rtmp_url' not in video:
         get_video_player_info(video, options)
@@ -771,7 +775,7 @@ COMMANDS
         die('Invalid option')
     if len(args) < 2:
         MyCmd(options).cmdloop()
-        exit(0)
+        sys.exit(0)
     if args[0] not in ('url', 'play', 'record', 'search'):
         die('Invalid command')
 
@@ -780,7 +784,7 @@ COMMANDS
 
     elif args[0] == 'play':
         play({'url':args[1]}, options)
-        exit(1)
+        sys.exit(1)
 
     elif args[0] == 'record':
         record({'url':args[1]}, options)
