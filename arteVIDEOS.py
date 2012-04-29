@@ -72,6 +72,57 @@ HIST_CMD = ('plus7', 'programs', 'events', 'allvideos', 'search')
 BOLD   = '[1m'
 NC     = '[0m'    # no color
 
+class Video(object):
+    def __init__(self, title, url, teaser, options):
+        self.title = title
+        self.url = url
+        self.teaser = teaser
+        self.options = options
+        self._info = None
+        self._player_url = None
+        self._rtmp_url = None
+        self._flv = None
+        self._mp4 = None
+
+    def get_data(self):
+        print ':: Retrieving video info',
+        sys.stdout.flush()
+        self._rtmp_url, self._player_url, self._info = get_rtmp_url(self.url, quality=self.options.quality, lang=self.options.lang)
+        sys.stdout.write('\r')
+        sys.stdout.flush()
+
+    def get_info(self):
+        if self._info is None:
+            self.get_data()
+        return self._info
+    info = property(get_info)
+
+    def get_player_url(self):
+        if self._player_url is None:
+            self.get_data()
+        return self._player_url
+    player_url = property(get_player_url)
+
+    def get_rtmp_url(self):
+        if self._rtmp_url is None:
+            self.get_data()
+        return self._rtmp_url
+    rtmp_url = property(get_rtmp_url)
+
+    def get_flv_name(self):
+        '''create output file name'''
+        if self._flv is None:
+            flv = urlparse.urlparse(self.url).path.split('/')[-1]
+            self._flv = flv.replace('.html', '_%s_%s.flv' % (self.options.quality, self.options.lang))
+        return self._flv
+    flv = property(get_flv_name)
+
+    def get_mp4_name(self):
+        if self._mp4 is None:
+            self._mp4 = self.flv.replace('.flv', '.mp4')
+        return self._mp4
+    mp4 = property(get_mp4_name)
+
 class Navigator(object):
     def __init__(self, options):
         self.options = options
@@ -133,7 +184,7 @@ class Navigator(object):
                 return
             url = DOMAIN + soup[start:soup.index('"', start)] + QUERY_STRING % (self.page+1,)
             soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
-            self.results.append(extract_videos(soup))
+            self.results.append(extract_videos(soup, self.options))
         except urllib2.URLError:
             die("Can't complete the requested search")
 
@@ -178,7 +229,7 @@ class Navigator(object):
             #    return
             #url = DOMAIN + soup[start:soup.index('"', start)] + QUERY_STRING % (self.page+1,)
             #soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
-            self.results.append(extract_videos(soup))
+            self.results.append(extract_videos(soup, self.options))
         except urllib2.URLError:
             die("Can't complete the requested search")
 
@@ -217,7 +268,7 @@ class Navigator(object):
             start = soup.index('thumbnailViewUrl: "')+19
             url = DOMAIN + soup[start:soup.index('"', start)] + QUERY_STRING % (self.page+1,)
             soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
-            self.results.append(extract_videos(soup))
+            self.results.append(extract_videos(soup, self.options))
         except urllib2.URLError:
             die("Can't complete the requested search")
 
@@ -229,7 +280,7 @@ class Navigator(object):
         try:
             url = SEARCH_URL % (self.options.lang, SEARCH[self.options.lang], self.page+1) + s.replace(' ', '+')
             soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
-            self.results.append(extract_videos(soup))
+            self.results.append(extract_videos(soup, self.options))
         except urllib2.URLError:
             die("Can't complete the requested search")
 
@@ -241,7 +292,7 @@ class Navigator(object):
         try:
             url = FILTER_URL % self.options.lang + QUERY_STRING % (self.page+1,)
             soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
-            self.results.append(extract_videos(soup))
+            self.results.append(extract_videos(soup, self.options))
         except urllib2.URLError:
             die("Can't get the home page of arte+7")
 
@@ -290,9 +341,7 @@ class MyCmd(Cmd):
     show the url of the chosen video'''
         try:
             video = self.nav[arg]
-            if 'rtmp_url' not in video:
-                get_video_player_info(video, self.nav.options)
-            print video['rtmp_url']
+            print video.rtmp_url
         except ValueError:
             print >> sys.stderr, 'Error: wrong argument (must be an integer)'
         except IndexError:
@@ -304,9 +353,7 @@ class MyCmd(Cmd):
     show the Flash player url of the chosen video'''
         try:
             video = self.nav[arg]
-            if 'player_url' not in video:
-                get_video_player_info(video, self.nav.options)
-            print video['player_url']
+            print video.player_url
         except ValueError:
             print >> sys.stderr, 'Error: wrong argument (must be an integer)'
         except IndexError:
@@ -318,10 +365,8 @@ class MyCmd(Cmd):
         display details about chosen video'''
         try:
             video = self.nav[arg]
-            if 'info' not in video:
-                get_video_player_info(video, self.nav.options)
-            print '%s== %s ==%s'% (BOLD, video['title'], NC)
-            print video['info']
+            print '%s== %s ==%s'% (BOLD, video.title, NC)
+            print video.info
         except ValueError:
             print >> sys.stderr, 'Error: wrong argument (must be an integer)'
         except IndexError:
@@ -408,6 +453,7 @@ class MyCmd(Cmd):
         elif arg in QUALITY:
             self.nav.options.quality = arg
             self.nav.clear_info()
+            print ':: All lists/results have been cleared'
         else:
             print >> sys.stderr, 'Error: quality could be %s' % ','.join(QUALITY)
 
@@ -576,15 +622,7 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
     except urllib2.URLError:
         die('Invalid URL')
 
-def get_video_player_info(video, options):
-    '''get various info from page of video: *modify* video variable'''
-    print ':: Retrieving video data'
-    r, p, i = get_rtmp_url(video['url'], quality=options.quality, lang=options.lang)
-    video['rtmp_url'] = r
-    video['player_url'] = p
-    video['info'] = i
-
-def extract_videos(soup):
+def extract_videos(soup, options):
     '''extract list of videos title, url, and teaser from video_soup'''
     videos = []
     video_soup = soup.findAll('div', {'class': 'video'})
@@ -597,10 +635,10 @@ def extract_videos(soup):
             # ignore bottom videos
             continue
         try:
-            videos.append({'title':a.contents[0], 'url':DOMAIN+a['href'], 'teaser':teaser})
+            videos.append(Video(a.contents[0], DOMAIN+a['href'], teaser, options))
         except IndexError:
             # empty title ??
-            videos.append({'title':'== NO TITLE ==', 'url':DOMAIN+a['href'], 'teaser':teaser})
+            videos.append(Video('== NO TITLE ==', DOMAIN+a['href'], teaser, options))
     return videos
 
 def extract_info(soup):
@@ -620,15 +658,15 @@ def print_results(results, verbose=True, page=1):
     '''print list of video:
     title in bold with a number followed by teaser'''
     for i in range(len(results)):
-        print '%s(%d) %s'% (BOLD, i+1+VIDEO_PER_PAGE*page, results[i]['title'] + NC)
+        print '%s(%d) %s'% (BOLD, i+1+VIDEO_PER_PAGE*page, results[i].title + NC)
         if verbose:
-            print '    '+ results[i]['teaser']
+            print '    '+ results[i].teaser
     if len(results) == 0:
         print ':: the search returned nothing'
 
 def play(video, options):
     cmd_args = make_cmd_args(video, options, streaming=True)
-    if 'nogeo/carton_23h' in video['rtmp_url']:
+    if 'nogeo/carton_23h' in video.rtmp_url:
         print >> sys.stderr, 'Error: This video is only available between 23:00 and 05:00'
         return
     player_cmd = find_player(PLAYERS)
@@ -654,31 +692,26 @@ def record(video, options):
     cwd = os.getcwd()
     os.chdir(options.dldir)
     cmd_args = make_cmd_args(video, options)
-    if 'nogeo/carton_23h' in video['rtmp_url']:
+    if 'nogeo/carton_23h' in video.rtmp_url:
         print >> sys.stderr, 'Error: This video is only available between 23:00 and 05:00'
         return
     p = subprocess.Popen(['rtmpdump'] + cmd_args.split(' '))
     p.wait()
 
     # Convert to mp4
-    # recreate output file name to convert to mp4
-    output_flv = urlparse.urlparse(video['url']).path.split('/')[-1]
-    output_flv = output_flv.replace('.html', '_%s_%s.flv' % (options.quality, options.lang))
-    output_mp4 = output_flv.replace('.flv', '.mp4')
-
-    cmd = 'ffmpeg -v -10 -i %s -acodec copy -vcodec copy %s' % (output_flv, output_mp4)
+    cmd = 'ffmpeg -v -10 -i %s -acodec copy -vcodec copy %s' % (video.flv, video.mp4)
     print ':: Converting to mp4 format'
-    is_file_present = os.path.isfile(output_mp4)
+    is_file_present = os.path.isfile(video.mp4)
     try:
         subprocess.check_call(cmd.split(' '))
-        os.unlink(output_flv)
+        os.unlink(video.flv)
     except OSError:
         print >> sys.stderr, 'Error: ffmpeg command not found. Conversion aborted.'
     except subprocess.CalledProcessError:
         print >> sys.stderr, 'Error: conversion failed.'
         # delete file if it was not there before conversion process started
-        if os.path.isfile(output_mp4) and not is_file_present:
-            os.unlink(output_mp4)
+        if os.path.isfile(video.mp4) and not is_file_present:
+            os.unlink(video.mp4)
 
     os.chdir(cwd)
 
@@ -687,27 +720,20 @@ def make_cmd_args(video, options, streaming=False):
         print >> sys.stderr, 'Error: rtmpdump has not been found'
         sys.exit(1)
 
-    if 'rtmp_url' not in video:
-        get_video_player_info(video, options)
-    output_file = None
-    if not streaming:
-        output_file = urlparse.urlparse(video['url']).path.split('/')[-1]
-        output_file = output_file.replace('.html', '_%s_%s.flv' % (options.quality, options.lang))
-        cmd_args = '--rtmp %s --flv %s --swfVfy %s' % (video['rtmp_url'], output_file, video['player_url'])
-    else:
-        cmd_args = '--rtmp %s --swfVfy %s' % (video['rtmp_url'], video['player_url'])
+    cmd_args = '--rtmp %s --swfVfy %s' % (video.rtmp_url, video.player_url)
     if not options.verbose:
         cmd_args += ' --quiet'
 
     if not streaming:
-        if os.path.exists(output_file):
+        cmd_args += ' --flv %s' % video.flv
+        if os.path.exists(video.flv):
             # try to resume a download
             cmd_args += ' --resume'
-            print ':: Resuming download of %s' % output_file
+            print ':: Resuming download of %s' % video.flv
         else:
-            print ':: Downloading to %s' % output_file
+            print ':: Downloading to %s' % video.flv
     else:
-        print ':: Streaming from %s' % video['rtmp_url']
+        print ':: Streaming from %s' % video.rtmp_url
 
     return cmd_args
 
