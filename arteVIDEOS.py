@@ -91,37 +91,37 @@ class Video(object):
         sys.stdout.write('\r')
         sys.stdout.flush()
 
-    def get_info(self):
+    @property
+    def info(self):
         if self._info is None:
             self.get_data()
         return self._info
-    info = property(get_info)
 
-    def get_player_url(self):
+    @property
+    def player_url(self):
         if self._player_url is None:
             self.get_data()
         return self._player_url
-    player_url = property(get_player_url)
 
-    def get_rtmp_url(self):
+    @property
+    def rtmp_url(self):
         if self._rtmp_url is None:
             self.get_data()
         return self._rtmp_url
-    rtmp_url = property(get_rtmp_url)
 
-    def get_flv_name(self):
+    @property
+    def flv(self):
         '''create output file name'''
         if self._flv is None:
             flv = urlparse.urlparse(self.url).path.split('/')[-1]
             self._flv = flv.replace('.html', '_%s_%s.flv' % (self.options.quality, self.options.lang))
         return self._flv
-    flv = property(get_flv_name)
 
-    def get_mp4_name(self):
+    @property
+    def mp4(self):
         if self._mp4 is None:
             self._mp4 = self.flv.replace('.flv', '.mp4')
         return self._mp4
-    mp4 = property(get_mp4_name)
 
 class Navigator(object):
     def __init__(self, options):
