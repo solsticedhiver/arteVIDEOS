@@ -692,7 +692,8 @@ def play(video):
 def record(video, dldir):
     cwd = os.getcwd()
     os.chdir(dldir)
-    cmd_args = make_cmd_args(video)
+    resume = os.path.exists(video.flv)
+    cmd_args = make_cmd_args(video, resume=resume)
     if 'nogeo/carton_23h' in video.rtmp_url:
         print >> sys.stderr, 'Error: This video is only available between 23:00 and 05:00'
         return
@@ -716,7 +717,7 @@ def record(video, dldir):
 
     os.chdir(cwd)
 
-def make_cmd_args(video, streaming=False):
+def make_cmd_args(video, resume=False, streaming=False):
     if not find_in_path(os.environ['PATH'], 'rtmpdump'):
         print >> sys.stderr, 'Error: rtmpdump has not been found'
         sys.exit(1)
@@ -725,7 +726,7 @@ def make_cmd_args(video, streaming=False):
 
     if not streaming:
         cmd_args += ' --flv %s' % video.flv
-        if os.path.exists(video.flv):
+        if resume:
             # try to resume a download
             cmd_args += ' --resume'
             print ':: Resuming download of %s' % video.flv
