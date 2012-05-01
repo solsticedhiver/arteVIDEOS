@@ -614,8 +614,8 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
             # at last the video url
             url = soup.urls.find('url', {'quality': quality})
             if url is None:
-                url = soup.urls.find('url')[0]
-                print >> sys.stderr, "Can't find the desired quality. Using the first one found"
+                url = soup.urls.find('url')
+                print >> sys.stderr, "Warning: Can't find the desired quality. Using the first one found"
             rtmp_url = url.string
 
         return (rtmp_url, player_url, info)
