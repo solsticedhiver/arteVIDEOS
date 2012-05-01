@@ -73,7 +73,7 @@ BOLD   = '[1m'
 NC     = '[0m'    # no color
 
 class Video(object):
-    def __init__(self, title, url, teaser, options):
+    def __init__(self, url, title, teaser, options):
         self.title = title
         self.url = url
         self.teaser = teaser
@@ -389,7 +389,7 @@ class MyCmd(Cmd):
                 return
         print ':: Playing video(s): ' + ', '.join('#%s' % i for i in arg.split())
         for v in playlist:
-            play(v, self.nav.options)
+            play(v)
 
     def do_record(self, arg):
         '''record NUMBER [NUMBER] ...
@@ -408,7 +408,7 @@ class MyCmd(Cmd):
         print ':: Recording video(s): ' + ', '.join('#%s' % i for i in arg.split())
         # TODO: do that in parallel ?
         for v in playlist:
-            record(v, self.nav.options)
+            record(v, self.nav.options.dldir)
 
     def do_search(self, arg):
         '''search STRING
@@ -635,10 +635,11 @@ def extract_videos(soup, options):
             # ignore bottom videos
             continue
         try:
-            videos.append(Video(a.contents[0], DOMAIN+a['href'], teaser, options))
+            title = a.contents[0]
         except IndexError:
             # empty title ??
-            videos.append(Video('== NO TITLE ==', DOMAIN+a['href'], teaser, options))
+            title = '== NO TITLE =='
+        videos.append(Video(DOMAIN+a['href'], title, teaser, options))
     return videos
 
 def extract_info(soup):
@@ -664,8 +665,8 @@ def print_results(results, verbose=True, page=1):
     if len(results) == 0:
         print ':: the search returned nothing'
 
-def play(video, options):
-    cmd_args = make_cmd_args(video, options, streaming=True)
+def play(video):
+    cmd_args = make_cmd_args(video, streaming=True)
     if 'nogeo/carton_23h' in video.rtmp_url:
         print >> sys.stderr, 'Error: This video is only available between 23:00 and 05:00'
         return
@@ -688,10 +689,10 @@ def play(video, options):
     else:
         print >> sys.stderr, 'Error: no player has been found.'
 
-def record(video, options):
+def record(video, dldir):
     cwd = os.getcwd()
-    os.chdir(options.dldir)
-    cmd_args = make_cmd_args(video, options)
+    os.chdir(dldir)
+    cmd_args = make_cmd_args(video)
     if 'nogeo/carton_23h' in video.rtmp_url:
         print >> sys.stderr, 'Error: This video is only available between 23:00 and 05:00'
         return
@@ -715,14 +716,12 @@ def record(video, options):
 
     os.chdir(cwd)
 
-def make_cmd_args(video, options, streaming=False):
+def make_cmd_args(video, streaming=False):
     if not find_in_path(os.environ['PATH'], 'rtmpdump'):
         print >> sys.stderr, 'Error: rtmpdump has not been found'
         sys.exit(1)
 
-    cmd_args = '--rtmp %s --swfVfy %s' % (video.rtmp_url, video.player_url)
-    if not options.verbose:
-        cmd_args += ' --quiet'
+    cmd_args = '--rtmp %s --swfVfy %s --quiet' % (video.rtmp_url, video.player_url)
 
     if not streaming:
         cmd_args += ' --flv %s' % video.flv
@@ -788,8 +787,6 @@ COMMANDS
             action='store', help='language of the video fr, de, en (default: fr)')
     parser.add_option('-q', '--quality', dest='quality', type='string', default=DEFAULT_QUALITY,
             action='store', help='quality of the video sd or hd (default: hd)')
-    parser.add_option('--verbose', dest='verbose', default=False,
-            action='store_true', help='show output of rtmpdump')
 
     options, args = parser.parse_args()
 
@@ -809,11 +806,11 @@ COMMANDS
         print get_rtmp_url(args[1], quality=options.quality, lang=options.lang)[0]
 
     elif args[0] == 'play':
-        play({'url':args[1]}, options)
+        play(Video(args[1], '', '', options))
         sys.exit(1)
 
     elif args[0] == 'record':
-        record({'url':args[1]}, options)
+        record(Video(args[1], '', '', options), options.dldir)
 
     elif args[0] == 'search':
         term = ' '.join(args[1:])
