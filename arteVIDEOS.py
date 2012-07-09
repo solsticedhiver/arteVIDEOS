@@ -695,25 +695,33 @@ def record(video, dldir):
     resume = os.path.exists(video.flv)
     cmd_args = make_cmd_args(video, resume=resume)
     if 'nogeo/carton_23h' in video.rtmp_url:
-        print >> sys.stderr, 'Error: This video is only available between 23:00 and 05:00'
+        print >> sys.stderr, 'Error: this video is only available between 23:00 and 05:00'
         return
     p = subprocess.Popen(['rtmpdump'] + cmd_args.split(' '))
-    p.wait()
+    rt = p.wait()
 
-    # Convert to mp4
-    cmd = 'ffmpeg -v -10 -i %s -acodec copy -vcodec copy %s' % (video.flv, video.mp4)
-    print ':: Converting to mp4 format'
-    is_file_present = os.path.isfile(video.mp4)
-    try:
-        subprocess.check_call(cmd.split(' '))
-        os.unlink(video.flv)
-    except OSError:
-        print >> sys.stderr, 'Error: ffmpeg command not found. Conversion aborted.'
-    except subprocess.CalledProcessError:
-        print >> sys.stderr, 'Error: conversion failed.'
-        # delete file if it was not there before conversion process started
-        if os.path.isfile(video.mp4) and not is_file_present:
-            os.unlink(video.mp4)
+    if rt != 0:
+        if rt == 2:
+            print >> sys.stderr, 'Error: incomplete transfer; please rerun previous command to finish download'
+        elif rt == 1:
+            print >> sys.stderr, 'Error: rtmpdump unrecoverable error'
+    else:
+        # Convert to mp4
+        cmd = 'ffmpeg -i %s -acodec copy -vcodec copy %s' % (video.flv, video.mp4)
+        print ':: Converting to mp4 format'
+        is_file_present = os.path.isfile(video.mp4)
+        try:
+            subprocess.check_call(cmd.split(' '))
+            os.unlink(video.flv)
+        except OSError as e:
+            print >> sys.stderr, e
+            print >> sys.stderr, 'Error: ffmpeg command not found. Conversion aborted.'
+        except subprocess.CalledProcessError as e:
+            print >> sys.stderr, e
+            print >> sys.stderr, 'Error: conversion failed.'
+            # delete file if it was not there before conversion process started
+            if os.path.isfile(video.mp4) and not is_file_present:
+                os.unlink(video.mp4)
 
     os.chdir(cwd)
 
