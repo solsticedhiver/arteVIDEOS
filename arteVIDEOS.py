@@ -702,17 +702,15 @@ def record(video, dldir):
             print >> sys.stderr, 'Error: rtmpdump unrecoverable error'
     else:
         # Convert to mp4
-        cmd = 'ffmpeg -i %s -acodec copy -vcodec copy %s' % (video.flv, video.mp4)
+        cmd = 'ffmpeg -v -10  -i %s -acodec copy -vcodec copy %s' % (video.flv, video.mp4)
         print ':: Converting to mp4 format'
         is_file_present = os.path.isfile(video.mp4)
         try:
             subprocess.check_call(cmd.split(' '))
             os.unlink(video.flv)
         except OSError as e:
-            print >> sys.stderr, e
             print >> sys.stderr, 'Error: ffmpeg command not found. Conversion aborted.'
         except subprocess.CalledProcessError as e:
-            print >> sys.stderr, e
             print >> sys.stderr, 'Error: conversion failed.'
             # delete file if it was not there before conversion process started
             if os.path.isfile(video.mp4) and not is_file_present:
