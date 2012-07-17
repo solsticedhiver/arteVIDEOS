@@ -326,6 +326,20 @@ class MyCmd(Cmd):
             self.nav.last_cmd = line
         return stop
 
+    def do_video_per_page(self, arg):
+        '''show or specify the number of video to be displayed per screen'''
+        if arg == '':
+            print self.nav.results.video_per_page
+        else:
+            try:
+                self.nav.results.video_per_page = int(arg)
+                self.nav.results.page = 0
+                print ':: Current page is now #1'
+                if self.nav.results is not None:
+                    self.nav.results.print_page()
+            except VelueError:
+                print >> sys.stderr, 'Error: argument should be a number'
+
     def do_previous(self, arg):
         if self.nav.last_cmd.startswith(HIST_CMD) and self.nav.results.page >= 0:
             self.nav.results.page -= 1
@@ -553,6 +567,8 @@ class MyCmd(Cmd):
     dldir [PATH]     display or change download directory
     lang [fr|de|en]  display or switch to a different language
     quality [sd|hd]  display or switch to a different video quality
+    video_per_page [NUMBER]
+                     display or change number of video shown per page
 
     help             show this help
     quit             quit the cli
