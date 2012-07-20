@@ -126,32 +126,33 @@ class Video(object):
         return self._mp4
 
 class Results(object):
-    '''Holds results from a request to server'''
+    '''Holds a list of results from a request to server'''
     def __init__(self, video_per_page):
-        self.value = []
+        ''' a wrapper around list instead of inhereting from it'''
+        self.__value = []
         self.page = 0
         self.video_per_page = video_per_page
 
     def __getitem__(self, k):
-        return self.value[k]
+        return self.__value[k]
 
     def __setitem__(self, k, v):
-        self.value[k] = v
+        self.__value[k] = v
 
     def __len__(self):
-        return len(self.value)
+        return len(self.__value)
 
     def extend(self, L):
-        self.value.extend(L)
+        self.__value.extend(L)
 
     def print_page(self, verbose=True):
         '''print list of video:
         title in bold with a number followed by teaser'''
-        for i in range(min(self.video_per_page, len(self.value)-self.page*self.video_per_page)):
+        for i in range(min(self.video_per_page, len(self.__value)-self.page*self.video_per_page)):
             nb = i+self.video_per_page*self.page
-            print '%s(%d) %s'% (BOLD, nb+1, self.value[nb].title + NC)
+            print '%s(%d) %s'% (BOLD, nb+1, self.__value[nb].title + NC)
             if verbose:
-                print '    '+ self.value[nb].teaser
+                print '    '+ self.__value[nb].teaser
 
 class Navigator(object):
     '''Main object storing all info requested from server and help navigation'''
