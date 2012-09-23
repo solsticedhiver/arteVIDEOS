@@ -57,11 +57,11 @@ VIDEO_PER_PAGE = 50
 DOMAIN = 'http://videos.arte.tv'
 GENERIC_URL = DOMAIN + '/%s/videos/%s'
 HOME_URL = DOMAIN + '/%%s/videos#/tv/thumb///1/%d/' % VIDEO_PER_PAGE
-SEARCH_URL = DOMAIN + '/%%s/do_search/videos/%%s/index-3188352,view,searchResult.html?itemsPerPage=%d&pageNr=%%s&q=' % VIDEO_PER_PAGE
-FILTER_URL = DOMAIN + '/%s/do_delegate/videos/index-3188698,view,asThumbnail.html'
+SEARCH_URL = DOMAIN + '/%%s/do_search/videos/%%s/index--3188352,view,searchResult.html?itemsPerPage=%d&pageNr=%%s&q=' % VIDEO_PER_PAGE
+FILTER_URL = DOMAIN + '/%s/do_delegate/videos/index--3188698,view,asThumbnail.html'
 
 QUERY_STRING = '?hash=tv/thumb///%%s/%d/' % VIDEO_PER_PAGE
-EVENTS_PAGE = 'events/index-3188672.html'
+EVENTS_PAGE = 'events/index--3188672.html'
 
 SEARCH = {'fr': 'recherche', 'de':'suche', 'en': 'search'}
 LANG = SEARCH.keys()
