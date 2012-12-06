@@ -824,7 +824,7 @@ COMMANDS
     parser.add_option('-d', '--downloaddir', dest='dldir', type='string',
             default=DEFAULT_DLDIR, action='store', help='directory for downloads')
     parser.add_option('-l', '--lang', dest='lang', type='string', default=DEFAULT_LANG,
-            action='store', help='language of the video fr, de, en (default: fr)')
+            action='store', help=('language of the video fr, de, en (default: %s)' % DEFAULT_LANG))
     parser.add_option('-q', '--quality', dest='quality', type='string', default=DEFAULT_QUALITY,
             action='store', help='quality of the video sd or hd (default: hd)')
 
