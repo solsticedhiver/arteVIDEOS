@@ -749,7 +749,17 @@ def make_cmd_args(video, resume=False, streaming=False):
         err('Error: rtmpdump has not been found')
         sys.exit(1)
 
-    cmd_args = '--rtmp %s --swfVfy %s --quiet' % (video.rtmp_url, video.player_url)
+    try:
+        # explicitly pass --playpath, --tcUrl and --app parameter to rtmpdump
+        # because of "bug" in recent version of rtmpdump
+        tcUrl, playpath = video.rtmp_url.split('/mp4:')
+        playpath = 'mp4:' + playpath
+        swfVfy = video.player_url.split('?')[0]
+        app = '/'.join(tcUrl.split('/')[-2:])
+        cmd_args = '--rtmp %s --swfVfy %s --playpath %s --tcUrl %s --app %s --quiet' %\
+                    (video.rtmp_url, swfVfy, playpath, tcUrl, app)
+    except:
+        cmd_args = '--rtmp %s --swfVfy %s --quiet' % (video.rtmp_url, video.player_url)
 
     if not streaming:
         cmd_args += ' --flv %s' % video.flv
@@ -827,7 +837,7 @@ COMMANDS
     parser.add_option('-d', '--downloaddir', dest='dldir', type='string',
             default=DEFAULT_DLDIR, action='store', help='directory for downloads')
     parser.add_option('-l', '--lang', dest='lang', type='string', default=DEFAULT_LANG,
-            action='store', help='language of the video fr, de, en (default: fr)')
+            action='store', help=('language of the video fr, de, en (default: %s)' % DEFAULT_LANG))
     parser.add_option('-q', '--quality', dest='quality', type='string', default=DEFAULT_QUALITY,
             action='store', help='quality of the video sd or hd (default: hd)')
 
