@@ -746,7 +746,15 @@ def make_cmd_args(video, resume=False, streaming=False):
         print >> sys.stderr, 'Error: rtmpdump has not been found'
         sys.exit(1)
 
-    cmd_args = '--rtmp %s --swfVfy %s --quiet' % (video.rtmp_url, video.player_url)
+    try:
+        tcUrl, playpath = video.rtmp_url.split('/mp4:')
+        playpath='mp4:'+playpath
+        _player=video.player_url.split('?')[0]
+        app='/'.join(tcUrl.split('/')[-2:])
+        cmd_args = '--rtmp %s --swfVfy %s --playpath %s --tcUrl %s --app %s' %\
+                    (video.rtmp_url, _player, playpath, tcUrl, app)
+    except:
+        cmd_args = '--rtmp %s --swfVfy %s --quiet' % (video.rtmp_url, video.player_url)
 
     if not streaming:
         cmd_args += ' --flv %s' % video.flv
