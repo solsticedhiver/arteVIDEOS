@@ -747,12 +747,14 @@ def make_cmd_args(video, resume=False, streaming=False):
         sys.exit(1)
 
     try:
+        # explicitly pass --playpath, --tcUrl and --app parameter to rtmpdump
+        # because of "bug" in recent version of rtmpdump
         tcUrl, playpath = video.rtmp_url.split('/mp4:')
-        playpath='mp4:'+playpath
-        _player=video.player_url.split('?')[0]
-        app='/'.join(tcUrl.split('/')[-2:])
-        cmd_args = '--rtmp %s --swfVfy %s --playpath %s --tcUrl %s --app %s' %\
-                    (video.rtmp_url, _player, playpath, tcUrl, app)
+        playpath = 'mp4:' + playpath
+        swfVfy = video.player_url.split('?')[0]
+        app = '/'.join(tcUrl.split('/')[-2:])
+        cmd_args = '--rtmp %s --swfVfy %s --playpath %s --tcUrl %s --app %s --quiet' %\
+                    (video.rtmp_url, swfVfy, playpath, tcUrl, app)
     except:
         cmd_args = '--rtmp %s --swfVfy %s --quiet' % (video.rtmp_url, video.player_url)
 
