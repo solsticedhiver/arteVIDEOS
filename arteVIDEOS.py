@@ -342,7 +342,7 @@ class MyCmd(Cmd):
                 err('Error: argument should be a number')
 
     def do_previous(self, arg):
-        if self.nav.last_cmd.startswith(HIST_CMD) and self.nav.results.page >= 0:
+        if self.nav.last_cmd.startswith(HIST_CMD) and self.nav.results.page >= 0 and self.nav.results.page > 0:
             self.nav.results.page -= 1
             self.nav.results.print_page()
         return False
