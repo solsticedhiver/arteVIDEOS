@@ -47,8 +47,9 @@ import os
 import subprocess
 from optparse import OptionParser
 from cmd import Cmd
+import json
 
-VERSION = '0.3.2'
+VERSION = '0.3.3'
 QUALITY = ('sd', 'hd')
 DEFAULT_DLDIR = os.getcwd()
 
@@ -606,7 +607,7 @@ def die(msg):
     print >> sys.stderr, 'Error: %s. See %s --help' % (msg, sys.argv[0])
     sys.exit(1)
 
-def get_rtmp_url(url_page, quality='hd', lang='fr'):
+def old_get_rtmp_url(url_page, quality='hd', lang='fr'):
     '''get the rtmp url of the video and player url and info about video and soup'''
     # inspired by the get_rtmp_url from arte7recorder project
 
@@ -648,6 +649,30 @@ def get_rtmp_url(url_page, quality='hd', lang='fr'):
                 err("Warning: Can't find the desired quality. Using the first one found")
             rtmp_url = url.string
 
+        return (rtmp_url, player_url, info)
+    except urllib2.URLError:
+        die('Invalid URL')
+
+def get_rtmp_url(url_page, quality='hd', lang='fr'):
+    '''get the rtmp url of the video and player url and info about
+video and    soup'''
+    PARAMS = {'hd':'SQ', 'sd':'MQ', 'ld':'LQ', 'fr':'1', 'de':'2'}
+    try:
+        # get the web page
+        first_soup = soup = BeautifulSoup(urllib2.urlopen(url_page).read())
+        object_tag = soup.find('div', {'class':'video-container'})
+        if object_tag is None:
+            return old_get_rtmp_url(url_page, quality, lang)
+        try:
+            url_json = object_tag['arte_vp_url']
+        except KeyError:
+            die('Video url not found')
+        data_json = json.loads(urllib2.urlopen(url_json).read())
+        #print json.dumps(data_json, sort_keys=True, indent=2)
+        player = data_json['videoJsonPlayer']['VSR']['RTMP_%s_%s'% (PARAMS[quality], PARAMS[lang])]
+        rtmp_url = player['streamer']+'mp4:'+player['url']
+        player_url = ""
+        info = data_json['videoJsonPlayer']['VDE'] + '\n\n' + data_json['videoJsonPlayer']['VRA']
         return (rtmp_url, player_url, info)
     except urllib2.URLError:
         die('Invalid URL')
