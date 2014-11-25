@@ -41,7 +41,7 @@ except ImportError:
     print >> sys.stderr, 'Error: you need the BeautifulSoup(v3) python module'
     sys.exit(1)
 import urllib2
-from urllib import unquote
+from urllib import unquote, urlretrieve
 import urlparse
 import os
 import subprocess
@@ -60,7 +60,7 @@ VIDEO_PER_PAGE = 50
 DOMAIN = 'http://www.arte.tv'
 PLUS_URL = DOMAIN + '/guide/%s/plus7?regions=ALL%%2Cdefault%%2CDE_FR%%2CSAT%%2CEUR_DE_FR'
 SEARCH_URL = DOMAIN + '/guide/%s/%s?keyword=%s'
-SEARCH_KEYWORD = {'fr':'resultats-de-recherche', 'de','suchergebnisse'}
+SEARCH_KEYWORD = {'fr':'resultats-de-recherche', 'de':'suchergebnisse'}
 
 HIST_CMD = ('plus7', 'programs', 'search')
 
@@ -177,6 +177,7 @@ class Navigator(object):
             err('You need to run either a plus7, search or program command first')
 
     def retrieve(self, url):
+	pass
 
     def request(self, url):
         if not self.more:
@@ -396,8 +397,7 @@ class MyCmd(Cmd):
             return('ld',)
 
     def do_quality(self, arg):
-        '''quality [sd|hd|md|ld]
-    display or switch to a different quality'''
+        '''quality [sd|hd|md|ld] display or switch to a different quality'''
         if arg == '':
             print self.nav.options.quality
         elif arg in QUALITY:
@@ -458,8 +458,8 @@ class MyCmd(Cmd):
     info NUMBER      display details about given video
 
     dldir [PATH]     display or change download directory
-    lang [fr|de|en]  display or switch to a different language
-    quality [sd|hd]  display or switch to a different video quality
+    lang [fr|de]  display or switch to a different language
+    quality [sd|hd|md|ld]  display or switch to a different video quality
     video_per_page [NUMBER]
                      display or change number of video shown per page
 
@@ -545,9 +545,9 @@ def play(video):
     if player_cmd is not None:
         if video.video_url.endswith('.mp4'):
             cmd = ' '.join(player_cmd.split(' ')[0:-1]) + ' ' + video.video_url
-            print cmd
             subprocess.call(cmd.split(' '))
         else:
+            # LEGACY CODE NOT USED ANYMORE
             cmd_args = make_cmd_args(video, streaming=True)
             if 'nogeo/carton_23h' in video.video_url:
                 err('Error: This video is only available between 23:00 and 05:00')
@@ -572,42 +572,48 @@ def play(video):
 def record(video, dldir):
     cwd = os.getcwd()
     os.chdir(dldir)
-    resume = os.path.exists(video.flv)
-    cmd_args = make_cmd_args(video, resume=resume)
-    if 'nogeo/carton_23h' in video.video_url:
-        err('Error: this video is only available between 23:00 and 05:00')
-        return
-    p = subprocess.Popen(['rtmpdump'] + cmd_args.split(' '))
-    rt = p.wait()
 
-    if rt != 0:
-        if rt == 2:
-            err('Error: incomplete transfer; please rerun previous command to finish download')
-        elif rt == 1:
-            err('Error: rtmpdump unrecoverable error')
+    if video.video_url.endswith('.mp4'):
+        urlretrieve(video.video_url, video.mp4)
     else:
-        # Convert to mp4
-        if find_in_path(os.environ['PATH'], 'ffmpeg'):
-            conv_cmd = 'ffmpeg'
-        elif find_in_path(os.environ['PATH'], 'avconv'):
-            conv_cmd = 'avconv'
-        else:
-            err('Error: No conversion utility found')
+        # LEGACY CODE NOT USED ANYMORE
+        resume = os.path.exists(video.flv)
+
+        cmd_args = make_cmd_args(video, resume=resume)
+        if 'nogeo/carton_23h' in video.video_url:
+            err('Error: this video is only available between 23:00 and 05:00')
             return
-        cmd = conv_cmd + '-v -10 -i %s -acodec copy -vcodec copy %s' % (video.flv, video.mp4)
-        print ':: Converting to mp4 format'
-        is_file_present = os.path.isfile(video.mp4)
-        try:
-            subprocess.check_call(cmd.split(' '))
-            os.unlink(video.flv)
-        except OSError as e:
-            err('Error: ffmpeg command not found. Conversion aborted.')
-        except subprocess.CalledProcessError as e:
-            err(e)
-            err('Error: conversion failed.')
-            # delete file if it was not there before conversion process started
-            if os.path.isfile(video.mp4) and not is_file_present:
-                os.unlink(video.mp4)
+        p = subprocess.Popen(['rtmpdump'] + cmd_args.split(' '))
+        rt = p.wait()
+
+        if rt != 0:
+            if rt == 2:
+                err('Error: incomplete transfer; please rerun previous command to finish download')
+            elif rt == 1:
+                err('Error: rtmpdump unrecoverable error')
+        else:
+            # Convert to mp4
+            if find_in_path(os.environ['PATH'], 'ffmpeg'):
+                conv_cmd = 'ffmpeg'
+            elif find_in_path(os.environ['PATH'], 'avconv'):
+                conv_cmd = 'avconv'
+            else:
+                err('Error: No conversion utility found')
+                return
+            cmd = conv_cmd + '-v -10 -i %s -acodec copy -vcodec copy %s' % (video.flv, video.mp4)
+            print ':: Converting to mp4 format'
+            is_file_present = os.path.isfile(video.mp4)
+            try:
+                subprocess.check_call(cmd.split(' '))
+                os.unlink(video.flv)
+            except OSError as e:
+                err('Error: ffmpeg command not found. Conversion aborted.')
+            except subprocess.CalledProcessError as e:
+                err(e)
+                err('Error: conversion failed.')
+                # delete file if it was not there before conversion process started
+                if os.path.isfile(video.mp4) and not is_file_present:
+                    os.unlink(video.mp4)
 
     os.chdir(cwd)
 

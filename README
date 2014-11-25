@@ -8,10 +8,6 @@ WARNING:
 	You will not be able to view videos if you are outside these countries: France, Germany, Belgium, Austria and Switzerland.
 	Some videos that are restricted to a mature audience (+18) are only visible between 23:00 and 05:00.
 
-NOTES:
-	Most of the downloaded videos are in the flv format and contains h264/aac streams.
-	The script attempts to automatically convert to mp4 format without reencoding, if you have ffmpeg installed.
-
 REQUIREMENTS
 
 * python 2.7 (but not python 3)
@@ -51,10 +47,17 @@ USAGE
       -h, --help            show this help message and exit
       -d DLDIR, --downloaddir=DLDIR
                             directory where to save the downloads
-      -l LANG, --lang=LANG  preferred language of the video fr, de, en (default: fr)
+      -l LANG, --lang=LANG  preferred language of the video fr, de (default: fr)
       -q QUALITY, --quality=QUALITY
-                            quality of the video sd or hd (default: hd)
+                            quality of the video sd or hd or md or ld (default: hd)
       --verbose             show output of rtmpdump
+
+QUALITY:
+Each quality is a resolution heightxwidth@bitrate
+hd: 1280x720@2200
+sd: 720x406@800
+md: 720x406@1500
+ld: 384x216@300
 
 If you run it without any argument, you enter a simple command line interpreter.
 Here is an example of a session. [...] is used to shorten the output:
@@ -78,7 +81,7 @@ Here is an example of a session. [...] is used to shorten the output:
 
         dldir [PATH]     display or change download directory
         lang [fr|de|en]  display or switch to a different language
-        quality [sd|hd]  display or switch to a different video quality
+        quality [sd|hd|md|ld]  display or switch to a different video quality
 
         help             show this help
         quit             quit the cli
