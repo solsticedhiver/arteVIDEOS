@@ -15,7 +15,6 @@ NOTES:
 REQUIREMENTS
 
 * python 2.7 (but not python 3)
-* rtmpdump
 * beautifulsoup
     It is recommanded to use the 3.0.x or the 3.2.x version of beautifulsoup but not the 3.1.x version.
     The 3.1.x version does not parse very well some html from videos.arte.tv.
@@ -66,8 +65,6 @@ Here is an example of a session. [...] is used to shorten the output:
     arteVIDEOS> help
     COMMANDS:
         plus7            list videos from arte+7
-        allvideos        list videos from allvideos tab
-        events           list videos from events tab
         programs         list videos from programs tab
         search STRING    search for a video
 
