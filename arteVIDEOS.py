@@ -177,7 +177,10 @@ class Navigator(object):
             page_url = v.find('a')['href']
             videos.append(Video(page_url, title, teaser, self.options))
         self.stop = True
-        self.results.extend(videos)
+        if videos == []:
+            print ':: No result found'
+        else:
+            self.results.extend(videos)
 
     def retrieve(self, url):
         if not self.more:
