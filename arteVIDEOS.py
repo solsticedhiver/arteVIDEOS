@@ -416,7 +416,7 @@ class MyCmd(Cmd):
             return('ld',)
 
     def do_quality(self, arg):
-        '''quality [sd|hd|md|ld] display or switch to a different quality'''
+        '''quality [hd|md|sd|ld] display or switch to a different quality'''
         if arg == '':
             print self.nav.options.quality
         elif arg in QUALITY:
@@ -479,7 +479,7 @@ class MyCmd(Cmd):
 
     dldir [PATH]     display or change download directory
     lang [fr|de]  display or switch to a different language
-    quality [hd|sd|md|ld]  display or switch to a different video quality
+    quality [hd|md|sd|ld]  display or switch to a different video quality
     video_per_page [NUMBER]
                      display or change number of video shown per page
 
@@ -650,7 +650,7 @@ COMMANDS
     parser.add_option('-l', '--lang', dest='lang', type='string', default=DEFAULT_LANG,
             action='store', help=('language of the video fr, de, en (default: %s)' % DEFAULT_LANG))
     parser.add_option('-q', '--quality', dest='quality', type='string', default=DEFAULT_QUALITY,
-            action='store', help='quality of the video sd or hd (default: hd)')
+            action='store', help='quality of the video hd or md or sd or ld (default: hd)')
 
     options, args = parser.parse_args()
 
@@ -664,7 +664,7 @@ COMMANDS
         die('Invalid Path')
     if options.lang not in ('fr', 'de', 'en'):
         die('Invalid option')
-    if options.quality not in ('sd', 'hd'):
+    if options.quality not in ('sd', 'hd', 'md', 'ld'):
         die('Invalid option')
     if len(args) < 1:
         MyCmd(options).cmdloop()

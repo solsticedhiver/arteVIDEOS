@@ -49,13 +49,13 @@ You can show your support for this little software:
                             directory where to save the downloads
       -l LANG, --lang=LANG  preferred language of the video fr, de (default: fr)
       -q QUALITY, --quality=QUALITY
-                            quality of the video hd or sd or md or ld (default: hd)
+                            quality of the video hd or md or sd or ld (default: hd)
 
 # QUALITY:
 Each quality is a resolution height x width @ bitrate
 * hd: 1280x720@2200
-* sd: 720x406@800
 * md: 720x406@1500
+* sd: 720x406@800
 * ld: 384x216@300
 
 If you run it without any argument, you enter a simple command line interpreter.
