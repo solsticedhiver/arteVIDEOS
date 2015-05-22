@@ -188,6 +188,9 @@ class Navigator(object):
 
         soup = BeautifulSoup(urllib2.urlopen(url).read())
         ul = soup.find('ul', {'class':'clearfix list-inline list-unstyled'})
+        if ul == None:
+            print ':: No results found'
+            return
         vid = ul.findAll('li', {'class':'video'})
         videos = []
         for v in vid:
@@ -217,7 +220,7 @@ class Navigator(object):
         pr = int(arg) - 1
         url = self.programs[pr][1]
         print ':: Retrieving requested program list'
-        self.parse_search(url)
+        self.retrieve(url)
 
     def search(self, s):
         '''search videos matching string s'''
