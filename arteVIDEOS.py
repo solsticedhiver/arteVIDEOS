@@ -58,6 +58,7 @@ METHOD = {'HTTP':'HTTP_MP4', 'RTMP':'RTMP'}
 
 VIDEO_PER_PAGE = 50
 DOMAIN = 'http://www.arte.tv'
+GUIDE_URL = DOMAIN + '/guide/%s/plus7'
 PLUS_URL = DOMAIN + '/guide/%s/plus7?regions=ALL%%2Cdefault%%2CDE_FR%%2CSAT%%2CEUR_DE_FR'
 SEARCH_URL = DOMAIN + '/guide/%s/%s?keyword=%s'
 SEARCH_KEYWORD = {'fr':'resultats-de-recherche', 'de':'suchergebnisse'}
@@ -69,14 +70,14 @@ NC     = '[0m'    # no color
 
 class Video(object):
     '''Store info about a given video'''
-    def __init__(self, page_url, title, teaser, options):
+    def __init__(self, page_url, title, teaser, options, info=None, video_url=None):
         self.title = title
         self.page_url = page_url
         self.teaser = teaser
         self.options = options
-        self._info = None
+        self._info = info
         self._player_url = None
-        self._video_url = None
+        self._video_url = video_url
         self._flv = None
         self._mp4 = None
 
@@ -177,7 +178,23 @@ class Navigator(object):
             err('You need to run either a plus7, search or program command first')
 
     def retrieve(self, url):
-	pass
+        if not self.more:
+            self.npage = 1
+            self.stop = False
+            self.results = Results(self.video_per_page)
+
+        soup = BeautifulSoup(urllib2.urlopen(url).read())
+        ul = soup.find('ul', {'class':'clearfix list-inline list-unstyled'})
+        vid = ul.findAll('li', {'class':'video'})
+        videos = []
+        for v in vid:
+            teaser = v.find('div', {'class':'video-block ARTE_PLUS_SEVEN has-play'})['data-description']
+            title = v.find('h3')['title']
+            url_json = v.find('div', {'class':'video-container'})['arte_vp_url']
+            url, info = extract_json(url_json)
+            videos.append(Video(url_json, title, teaser, self.options, info=info, video_url=url))
+        self.stop = True
+        self.results.extend(videos)
 
     def request(self, url):
         if not self.more:
@@ -217,15 +234,15 @@ class Navigator(object):
             return
         try:
             print ':: Retrieving programs name'
-            url = GENERIC_URL % (self.options.lang, PROGRAMS[self.options.lang])
+            url = GUIDE_URL % self.options.lang
             soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
             # get the programs
-            lis = soup.find('div', {'id': 'listChannel'}).findAll('li')
+            sec = soup.find('section', {'class':'nav-clusters'})
+            lis = sec.findAll('div', {'class': 'col-xs-12 col-sm-2 cluster'})
             programs, urls = [], []
             for l in lis:
-                a = l.find('a')
-                programs.append(a.contents[0])
-                urls.append(a['href'])
+                programs.append(l.find('span', {'class': 'ellipsis title'}).text)
+                urls.append(l.find('a')['href'])
             if programs != []:
                 self.programs = zip(programs, urls)
             else:
@@ -498,6 +515,20 @@ def die(msg):
     print >> sys.stderr, 'Error: %s. See %s --help' % (msg, sys.argv[0])
     sys.exit(1)
 
+def extract_json(url_json, quality='hd', lang='fr', method='HTTP'):
+    try:
+        data_json = json.loads(urllib2.urlopen(url_json).read())
+        #print json.dumps(data_json, sort_keys=True, indent=2)
+        player = data_json['videoJsonPlayer']['VSR']['%s_%s_%s'% (METHOD[method], PARAMS[quality], PARAMS[lang])]
+        if method == 'HTTP':
+            video_url = player['url']
+        else:
+            video_url = player['streamer'] + player['url']
+        info = data_json['videoJsonPlayer']['VDE']+'\n\n' + data_json['videoJsonPlayer']['VRA']
+        return (video_url, info)
+    except urllib2.URLError:
+        die('Invalid URL')
+
 def get_url(url_page, quality='hd', lang='fr', method='HTTP'):
     '''get the url of the video and info about video'''
     try:
@@ -512,20 +543,8 @@ def get_url(url_page, quality='hd', lang='fr', method='HTTP'):
             # go one step further to really get all the data for the video
             data_json = json.loads(urllib2.urlopen(url_json).read())
             url_json = data_json['videoJsonPlayer']['videoPlayerUrl']
-        data_json = json.loads(urllib2.urlopen(url_json).read())
-        #print json.dumps(data_json, sort_keys=True, indent=2)
-        player = data_json['videoJsonPlayer']['VSR']['%s_%s_%s'% (METHOD[method], PARAMS[quality], PARAMS[lang])]
-        if method == 'HTTP':
-            video_url = player['url']
-        else:
-            video_url = player['streamer'] + player['url']
-        try:
-            info = soup.find('div', {'data-action':'description'}).p.string
-            info += '\n' + data_json['videoJsonPlayer']['infoProg']+'\n\n' + data_json['videoJsonPlayer']['VRA']
-        except AttributeError:
-            info = 'No description              \n\n' + data_json['videoJsonPlayer']['VRA']
-        player_url = ''
-        return (video_url, player_url, info)
+        (video_url, info) = extract_json(url_json, quality, lang, method)
+        return (video_url, '', info)
     except urllib2.URLError:
         die('Invalid URL')
 
@@ -535,7 +554,7 @@ def extract_videos(data_json, options):
     for v in data_json['videos']:
         title = v['title']
         teaser = v['desc'].strip()
-        url = DOMAIN + v['url']
+        url = v['url']
         videos.append(Video(url, title, teaser, options))
     return videos
 
