@@ -78,7 +78,6 @@ class Video(object):
         self._info = info
         self._player_url = None
         self._video_url = video_url
-        self._flv = None
         self._mp4 = None
 
     def get_data(self):
@@ -108,17 +107,10 @@ class Video(object):
         return self._video_url
 
     @property
-    def flv(self):
-        '''create output file name'''
-        if self._flv is None:
-            flv = urlparse.urlparse(self.page_url).path.split('/')[-1]
-            self._flv = flv + '_%s_%s.flv' % (self.options.quality, self.options.lang)
-        return self._flv
-
-    @property
     def mp4(self):
+        '''create output file name'''
         if self._mp4 is None:
-            self._mp4 = self.flv.replace('.flv', '.mp4')
+            self._mp4 = urlparse.urlparse(self.video_url).path.split('/')[-1]
         return self._mp4
 
 class Results(object):
@@ -565,106 +557,20 @@ def play(video):
         if video.video_url.endswith('.mp4'):
             cmd = ' '.join(player_cmd.split(' ')[0:-1]) + ' ' + video.video_url
             subprocess.call(cmd.split(' '))
-        else:
-            # LEGACY CODE NOT USED ANYMORE
-            cmd_args = make_cmd_args(video, streaming=True)
-            if 'nogeo/carton_23h' in video.video_url:
-                err('Error: This video is only available between 23:00 and 05:00')
-                return
-
-            p1 = subprocess.Popen(['rtmpdump'] + cmd_args.split(' '), stdout=subprocess.PIPE)
-            p2 = subprocess.Popen(player_cmd.split(' '), stdin=p1.stdout, stderr=subprocess.PIPE)
-            p2.wait()
-            # kill the zombie rtmpdump
-            try:
-                p1.kill()
-                p1.wait()
-            except AttributeError:
-                # if we use python 2.5
-                from signal import SIGKILL
-                from os import kill, waitpid
-                kill(p1.pid, SIGKILL)
-                waitpid(p1.pid, 0)
     else:
         err('Error: no player has been found.')
 
 def record(video, dldir):
+    print ':: Recording %s' % video.video_url
     cwd = os.getcwd()
     os.chdir(dldir)
 
     if video.video_url.endswith('.mp4'):
         urlretrieve(video.video_url, video.mp4)
     else:
-        # LEGACY CODE NOT USED ANYMORE
-        resume = os.path.exists(video.flv)
-
-        cmd_args = make_cmd_args(video, resume=resume)
-        if 'nogeo/carton_23h' in video.video_url:
-            err('Error: this video is only available between 23:00 and 05:00')
-            return
-        p = subprocess.Popen(['rtmpdump'] + cmd_args.split(' '))
-        rt = p.wait()
-
-        if rt != 0:
-            if rt == 2:
-                err('Error: incomplete transfer; please rerun previous command to finish download')
-            elif rt == 1:
-                err('Error: rtmpdump unrecoverable error')
-        else:
-            # Convert to mp4
-            if find_in_path(os.environ['PATH'], 'ffmpeg'):
-                conv_cmd = 'ffmpeg'
-            elif find_in_path(os.environ['PATH'], 'avconv'):
-                conv_cmd = 'avconv'
-            else:
-                err('Error: No conversion utility found')
-                return
-            cmd = conv_cmd + '-v -10 -i %s -acodec copy -vcodec copy %s' % (video.flv, video.mp4)
-            print ':: Converting to mp4 format'
-            is_file_present = os.path.isfile(video.mp4)
-            try:
-                subprocess.check_call(cmd.split(' '))
-                os.unlink(video.flv)
-            except OSError as e:
-                err('Error: ffmpeg command not found. Conversion aborted.')
-            except subprocess.CalledProcessError as e:
-                err(e)
-                err('Error: conversion failed.')
-                # delete file if it was not there before conversion process started
-                if os.path.isfile(video.mp4) and not is_file_present:
-                    os.unlink(video.mp4)
+        err('Error: Did not retrieved %s' % video.video_url)
 
     os.chdir(cwd)
-
-def make_cmd_args(video, resume=False, streaming=False):
-    if not find_in_path(os.environ['PATH'], 'rtmpdump'):
-        err('Error: rtmpdump has not been found')
-        sys.exit(1)
-
-    try:
-        # explicitly pass --playpath, --tcUrl and --app parameter to rtmpdump
-        # because of "bug" in recent version of rtmpdump
-        tcUrl, playpath = video.video_url.split('/mp4:')
-        playpath = 'mp4:' + playpath
-        swfVfy = video.player_url.split('?')[0]
-        app = '/'.join(tcUrl.split('/')[-2:])
-        cmd_args = '--rtmp %s --swfVfy %s --playpath %s --tcUrl %s --app %s --quiet' %\
-                    (video.video_url, swfVfy, playpath, tcUrl, app)
-    except:
-        cmd_args = '--rtmp %s --swfVfy %s --quiet' % (video.video_url, video.player_url)
-
-    if not streaming:
-        cmd_args += ' --flv %s' % video.flv
-        if resume:
-            # try to resume a download
-            cmd_args += ' --resume'
-            print ':: Resuming download of %s' % video.flv
-        else:
-            print ':: Downloading to %s' % video.flv
-    else:
-        print ':: Streaming from %s' % video.video_url
-
-    return cmd_args
 
 def expand_path(path):
     if '~' in path:
