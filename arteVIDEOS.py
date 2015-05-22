@@ -58,6 +58,7 @@ METHOD = {'HTTP':'HTTP_MP4', 'RTMP':'RTMP'}
 
 VIDEO_PER_PAGE = 50
 DOMAIN = 'http://www.arte.tv'
+DIRECT_URL = {'fr': DOMAIN + '/guide/fr/direct', 'de':DOMAIN+'/guide/de/live'}
 GUIDE_URL = DOMAIN + '/guide/%s/plus7'
 PLUS_URL = DOMAIN + '/guide/%s/plus7?regions=ALL%%2Cdefault%%2CDE_FR%%2CSAT%%2CEUR_DE_FR'
 SEARCH_URL = DOMAIN + '/guide/%s/%s?keyword=%s'
@@ -169,6 +170,23 @@ class Navigator(object):
         if len(self.results) == 0:
             err('You need to run either a plus7, search or program command first')
 
+    def parse_search(self, url):
+        if not self.more:
+            self.npage = 1
+            self.stop = False
+            self.results = Results(self.video_per_page)
+
+        soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
+        vid = soup.findAll('section', {'class':'result'})
+        videos = []
+        for v in vid:
+            teaser = v.find('p', {'class':'description'}).text.replace('<br>',' ').replace('<b>...</b>', ' ')
+            title = v.find('h3')['title']
+            page_url = v.find('a')['href']
+            videos.append(Video(page_url, title, teaser, self.options))
+        self.stop = True
+        self.results.extend(videos)
+
     def retrieve(self, url):
         if not self.more:
             self.npage = 1
@@ -206,13 +224,13 @@ class Navigator(object):
         pr = int(arg) - 1
         url = self.programs[pr][1]
         print ':: Retrieving requested program list'
-        self.retrieve(url)
+        self.parse_search(url)
 
     def search(self, s):
         '''search videos matching string s'''
         url = SEARCH_URL % (self.options.lang, SEARCH_KEYWORD[self.options.lang], s.replace(' ', '+'))
         print ':: Waiting for search request'
-        self.retrieve(url)
+        self.parse_search(url)
 
     def plus7(self):
         '''get the list of videos from url'''
@@ -272,6 +290,15 @@ class MyCmd(Cmd):
                     self.nav.results.print_page()
             except VelueError:
                 err('Error: argument should be a number')
+
+    def do_live(self, arg):
+        '''Play arte live'''
+        soup = BeautifulSoup(urllib2.urlopen(DIRECT_URL[self.nav.options.lang]).read())
+        url = soup.find('div', {'class':'video-container'})['arte_vp_live-url']
+        data_json = json.loads(urllib2.urlopen(url).read())
+        v = Video('', '', '', '', video_url=data_json['videoJsonPlayer']['VSR']['M3U8_HQ']['url'])
+        print ':: Playing Live'
+        play(v)
 
     def do_previous(self, arg):
         if self.nav.last_cmd.startswith(HIST_CMD) and self.nav.results.page >= 0 and self.nav.results.page > 0:
@@ -456,6 +483,7 @@ class MyCmd(Cmd):
             print '''COMMANDS:
     plus7            list videos from arte+7
     programs         list videos from programs tab
+    live             play arte live
     search STRING    search for a video
 
     next             list videos of the next page
@@ -554,7 +582,7 @@ def play(video):
     player_cmd = find_player(PLAYERS)
 
     if player_cmd is not None:
-        if video.video_url.endswith('.mp4'):
+        if video.video_url.endswith(('.mp4', '.m3u8')):
             cmd = ' '.join(player_cmd.split(' ')[0:-1]) + ' ' + video.video_url
             subprocess.call(cmd.split(' '))
     else:
