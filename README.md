@@ -3,24 +3,24 @@ A script to watch/record videos from the catch-up TV site http://videos.arte.tv
 - No flash-plugin required: just use your favorite player
 - Internet lag? just record the video and play it later.
 
-WARNING:
-	These videos are **copyrighted by ARTE**. I guess that you are **NOT** free to *share*, *sell* or *modify* those videos !
-	You will not be able to view videos if you are outside these countries: France, Germany, Belgium, Austria and Switzerland.
-	Some videos that are restricted to a mature audience (+18) are only visible between 23:00 and 05:00.
+# WARNING:
+These videos are **copyrighted by ARTE**. I guess that you are **NOT** free to *share*, *sell* or *modify* those videos !
+You will not be able to view videos if you are outside these countries: France, Germany, Belgium, Austria and Switzerland.
+Some videos that are restricted to a mature audience (+18) are only visible between 23:00 and 05:00.
 
-REQUIREMENTS
+# REQUIREMENTS
 
 * python 2.7 (but not python 3)
 * beautifulsoup 3.2.1
-* a video player like mplayer, vlc, xine or totem to use the play command.
+* a video player like *mplayer*, *vlc*, *xine* or *totem* to use the play command.
 Or add your own player in the script. Help is provided
 
-FLATTR
+# FLATTR
 You can show your support for this little software:
 - You can flattr at http://flattr.com/thing/176287/arteVIDEOS
-- You can even make a donation via Flattr !
+- You can even make a donation via *Flattr* !
 
-USAGE
+# USAGE
 
     Usage: arteVIDEOS.py url|play|record [OPTIONS] URL
            arteVIDEOS.py search [OPTIONS] STRING...
@@ -51,12 +51,12 @@ USAGE
       -q QUALITY, --quality=QUALITY
                             quality of the video hd or sd or md or ld (default: hd)
 
-QUALITY:
-Each quality is a resolution heightxwidth@bitrate
-hd: 1280x720@2200
-sd: 720x406@800
-md: 720x406@1500
-ld: 384x216@300
+# QUALITY:
+Each quality is a resolution height x width @ bitrate
+* hd: 1280x720@2200
+* sd: 720x406@800
+* md: 720x406@1500
+* ld: 384x216@300
 
 If you run it without any argument, you enter a simple command line interpreter.
 Here is an example of a session. [...] is used to shorten the output:
