@@ -48,7 +48,7 @@ from optparse import OptionParser
 from cmd import Cmd
 import json
 
-VERSION = '0.4'
+VERSION = '0.5'
 QUALITY = ('sd', 'md', 'ld', 'hd')
 LANG = ('fr', 'de')
 DEFAULT_DLDIR = os.getcwd()
