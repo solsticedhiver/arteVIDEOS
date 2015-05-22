@@ -496,7 +496,7 @@ class MyCmd(Cmd):
 
     dldir [PATH]     display or change download directory
     lang [fr|de]  display or switch to a different language
-    quality [sd|hd|md|ld]  display or switch to a different video quality
+    quality [hd|sd|md|ld]  display or switch to a different video quality
     video_per_page [NUMBER]
                      display or change number of video shown per page
 

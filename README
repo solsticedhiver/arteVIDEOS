@@ -49,7 +49,7 @@ USAGE
                             directory where to save the downloads
       -l LANG, --lang=LANG  preferred language of the video fr, de (default: fr)
       -q QUALITY, --quality=QUALITY
-                            quality of the video sd or hd or md or ld (default: hd)
+                            quality of the video hd or sd or md or ld (default: hd)
 
 QUALITY:
 Each quality is a resolution heightxwidth@bitrate
