@@ -63,19 +63,19 @@ Here is an example of a session. [...] is used to shorten the output:
 
     arteVIDEOS> plus7
     :: Retrieving plus7 videos list
-    (1) **La reine du silence**
+    (1) La reine du silence
         Denisa, une jeune Rom sourde, s’invente une nouvelle vie en dansant sur des films de Bollywood...
     [...]
-    (17) **Profession négociateur (4/6)**
+    (17) Profession négociateur (4/6)
         Alors que King négocie la libération d'un couple de Britanniques, la police indienne ouvre le feu...
     arteVIDEOS> play 17
     :: Playing video(s): #17
     :: Playing http://arte.gl-systemhaus.de/am/tvguide/default/054720-004-A_SQ_2_VF-STF_01823860_MP4-2200_AMM-Tvguide.mp4
     arteVIDEOS> next
-    (18) **Tout est vrai (ou presque)**
+    (18) Tout est vrai (ou presque)
         Toute la vérité (ou presque) sur Bob Dylan.
     [...]
-    (34) **La cuisine anti-gaspi**
+    (34) La cuisine anti-gaspi
         Au Pays-Bas, tout est là: fast-foods responsables, chefs innovants et adeptes de la cuisine à base d'insectes!
     arteVIDEOS> info 26
     == X:enius ==
