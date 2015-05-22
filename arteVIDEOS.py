@@ -77,14 +77,13 @@ class Video(object):
         self.teaser = teaser
         self.options = options
         self._info = info
-        self._player_url = None
         self._video_url = video_url
         self._mp4 = None
 
     def get_data(self):
         print ':: Retrieving video info',
         sys.stdout.flush()
-        self._video_url, self._player_url, self._info = get_url(self.page_url, quality=self.options.quality, lang=self.options.lang)
+        self._video_url, self._info = get_url(self.page_url, quality=self.options.quality, lang=self.options.lang)
         sys.stdout.write('\r')
         sys.stdout.flush()
 
@@ -94,12 +93,6 @@ class Video(object):
         if self._info is None:
             self.get_data()
         return self._info
-
-    @property
-    def player_url(self):
-        if self._player_url is None:
-            self.get_data()
-        return self._player_url
 
     @property
     def video_url(self):
@@ -333,18 +326,6 @@ class MyCmd(Cmd):
             err('Error: no video with this number')
             self.nav.extra_help()
 
-    def do_player_url(self, arg):
-        '''player_url NUMBER
-    show the Flash player url of the chosen video'''
-        try:
-            video = self.nav[arg]
-            print video.player_url
-        except ValueError:
-            err('Error: wrong argument (must be an integer)')
-        except IndexError:
-            err('Error: no video with this number')
-            self.nav.extra_help()
-
     def do_info(self, arg):
         '''info NUMBER
         display details about chosen video'''
@@ -564,7 +545,7 @@ def get_url(url_page, quality='hd', lang='fr', method='HTTP'):
             data_json = json.loads(urllib2.urlopen(url_json).read())
             url_json = data_json['videoJsonPlayer']['videoPlayerUrl']
         (video_url, info) = extract_json(url_json, quality, lang, method)
-        return (video_url, '', info)
+        return (video_url, info)
     except urllib2.URLError:
         die('Invalid URL')
 
