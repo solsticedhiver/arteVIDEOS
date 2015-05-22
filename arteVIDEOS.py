@@ -19,13 +19,12 @@
 #                           PLAYERS                                    #
 ########################################################################
 # You can add your favorite player at the beginning of the PLAYERS tuple
-# The command must read data from stdin
 # The order is significant: the first player available is used
 PLAYERS = (
-        'mplayer -really-quiet -',
-        'vlc -',
-        'xine stdin:/',
-        '/usr/bin/totem --enqueue fd://0', # you could use absolute path for the command too
+        'mplayer -really-quiet',
+        'vlc',
+        '/usr/bin/totem --enqueue', # you could use absolute path for the command too
+        'xine',
         )
 
 DEFAULT_LANG = 'fr'
@@ -568,8 +567,7 @@ def play(video):
     if player_cmd is not None:
         print ':: Playing %s' % video.video_url
         if video.video_url.endswith(('.mp4', '.m3u8')):
-            cmd = ' '.join(player_cmd.split(' ')[0:-1]) + ' ' + video.video_url
-            subprocess.call(cmd.split(' '))
+            subprocess.call(player_cmd.split(' ') + [video.video_url])
     else:
         err('Error: no player has been found.')
 
