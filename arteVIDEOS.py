@@ -582,6 +582,7 @@ def play(video):
     player_cmd = find_player(PLAYERS)
 
     if player_cmd is not None:
+        print ':: Playing %s' % video.video_url
         if video.video_url.endswith(('.mp4', '.m3u8')):
             cmd = ' '.join(player_cmd.split(' ')[0:-1]) + ' ' + video.video_url
             subprocess.call(cmd.split(' '))
@@ -642,6 +643,7 @@ def get_term_size():
 def main():
     usage = '''Usage: %prog url|play|record [OPTIONS] URL
        %prog search [OPTIONS] STRING...
+       %prog live
        %prog
 
 Play or record videos from arte VIDEOS website without a mandatory browser.
@@ -657,7 +659,8 @@ COMMANDS
     record  save the video into a local file
     search  search for a video on arte+7
             It will display a numbered list of results and enter
-            a simple command line interpreter'''
+            a simple command line interpreter
+    live    play arte live'''
 
     parser = OptionParser(usage=usage)
     parser.add_option('-d', '--downloaddir', dest='dldir', type='string',
@@ -681,10 +684,10 @@ COMMANDS
         die('Invalid option')
     if options.quality not in ('sd', 'hd'):
         die('Invalid option')
-    if len(args) < 2:
+    if len(args) < 1:
         MyCmd(options).cmdloop()
         sys.exit(0)
-    if args[0] not in ('url', 'play', 'record', 'search'):
+    if args[0] not in ('url', 'play', 'record', 'search', 'live'):
         die('Invalid command')
 
     if args[0] == 'url':
@@ -706,6 +709,14 @@ COMMANDS
         if nav.results is not None:
             nav.results.print_page()
             MyCmd(options, nav=nav).cmdloop()
+
+    elif args[0] == 'live':
+        soup = BeautifulSoup(urllib2.urlopen(DIRECT_URL[options.lang]).read())
+        url = soup.find('div', {'class':'video-container'})['arte_vp_live-url']
+        data_json = json.loads(urllib2.urlopen(url).read())
+        v = Video('', '', '', '', video_url=data_json['videoJsonPlayer']['VSR']['M3U8_HQ']['url'])
+        print ':: Playing Live'
+        play(v)
 
 if __name__ == '__main__':
     try:

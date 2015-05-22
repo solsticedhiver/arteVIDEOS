@@ -11,9 +11,7 @@ WARNING:
 REQUIREMENTS
 
 * python 2.7 (but not python 3)
-* beautifulsoup
-    It is recommanded to use the 3.0.x or the 3.2.x version of beautifulsoup but not the 3.1.x version.
-    The 3.1.x version does not parse very well some html from videos.arte.tv.
+* beautifulsoup 3.2.1
 * a video player like mplayer, vlc, xine or totem to use the play command.
 Or add your own player in the script. Help is provided
 
@@ -26,6 +24,7 @@ USAGE
 
     Usage: arteVIDEOS.py url|play|record [OPTIONS] URL
            arteVIDEOS.py search [OPTIONS] STRING...
+           arteVIDEOS.py live
            arteVIDEOS.py
 
     Play or record videos from arte VIDEOS website without a mandatory browser.
@@ -39,6 +38,7 @@ USAGE
         url     show the url of the video
         play    play the video directly (NOT IMPLEMENTED YET)
         record  save the video into a local file
+        live    play arte live
         search  search for a video on arte+7
                 It will display a numbered list of results and enter
                 a simple command line interpreter
@@ -50,7 +50,6 @@ USAGE
       -l LANG, --lang=LANG  preferred language of the video fr, de (default: fr)
       -q QUALITY, --quality=QUALITY
                             quality of the video sd or hd or md or ld (default: hd)
-      --verbose             show output of rtmpdump
 
 QUALITY:
 Each quality is a resolution heightxwidth@bitrate
@@ -62,59 +61,31 @@ ld: 384x216@300
 If you run it without any argument, you enter a simple command line interpreter.
 Here is an example of a session. [...] is used to shorten the output:
 
-    $ ./arteVIDEOS.py
-
-    Type "help" to see available commands.
-    arteVIDEOS> help
-    COMMANDS:
-        plus7            list videos from arte+7
-        programs         list videos from programs tab
-        search STRING    search for a video
-
-        next             list videos of the next page
-        previous         list videos of previous page
-
-        url NUMBER       show url of video
-        play NUMBERS     play chosen videos
-        record NUMBERS   download and save videos to a local file
-        info NUMBER      display details about given video
-
-        dldir [PATH]     display or change download directory
-        lang [fr|de|en]  display or switch to a different language
-        quality [sd|hd|md|ld]  display or switch to a different video quality
-
-        help             show this help
-        quit             quit the cli
-        exit             exit the cli
     arteVIDEOS> plus7
     :: Retrieving plus7 videos list
-    (1) Indonésie
-        Sur l'île de Lembata les garçons doivent chasser la baleine pour passer à l'âge adulte.
+    (1) **La reine du silence**
+        Denisa, une jeune Rom sourde, s’invente une nouvelle vie en dansant sur des films de Bollywood...
     [...]
-    (25) Boualem Sansal
-        Portrait de l'écrivain algérien à la recherche de l'identité de son peuple.
+    (17) **Profession négociateur (4/6)**
+        Alors que King négocie la libération d'un couple de Britanniques, la police indienne ouvre le feu...
+    arteVIDEOS> play 17
+    :: Playing video(s): #17
+    :: Playing http://arte.gl-systemhaus.de/am/tvguide/default/054720-004-A_SQ_2_VF-STF_01823860_MP4-2200_AMM-Tvguide.mp4
     arteVIDEOS> next
-    :: Retrieving plus7 videos list
-    (26) Philosophie
-        Le toucher nous met de plain-pied dans le réel. Raphaël Enthoven avec Clara Da Silva
+    (18) **Tout est vrai (ou presque)**
+        Toute la vérité (ou presque) sur Bob Dylan.
     [...]
-    (50) Au coeur des Alpes
-        Histoire de la coexistence entre les hommes et les animaux dans le massif alpin.
-    arteVIDEOS> info 40
-    :: Retrieving video data
-    Le dessous des cartes explore la face cachée du commerce du bois.
+    (34) **La cuisine anti-gaspi**
+        Au Pays-Bas, tout est là: fast-foods responsables, chefs innovants et adeptes de la cuisine à base d'insectes!
+    arteVIDEOS> info 26
+    == X:enius ==
+    Tout le monde en parle, mais peu de gens les utilisent. Les voitures électriques ne sont-elles qu'une mode passagère
+    ou sont-elles en passe de révolutionner la circulation routière ? En Europe, l'Allemagne, numéro 1 de l'industrie automobile,
+    est pourtant considérée comme la lanterne rouge de l'électromobilité...
 
-    (France, 2010, 12mn) ARTE F
-    Date de première diffusion:
-    Sam., 16. oct. 2010, 17h48
+    21/05/2015 08:29:40 +0200
+    arteVIDEOS> record 26
+    :: Recording video(s): #26
+    :: Recording http://arte.gl-systemhaus.de/am/tvguide/ALL/055916-011-A_SQ_2_VF-STF_01823061_MP4-2200_AMM-Tvguide.mp4
 
-    Date(s) de rediffusion:
-    Aujourd'hui à22h30
-    arteVIDEOS> play 40
-    :: Playing video(s): #40
-    :: Streaming from rtmp://artestras.fcod.llnwd.net/a3903/o35/MP4:geo/videothek/EUR_DE_FR/arteprod/A7_SGT_ENC_08_042143-035-A_PG_HQ_FR?h=641b72264e0820cdb6c02e1d7a907c7b
-    arteVIDEOS> record 40
-    :: Recording video(s): #40
-    :: Downloading to le_dessous_des_cartes-3472068_hd_fr.flv
     arteVIDEOS> exit
-
