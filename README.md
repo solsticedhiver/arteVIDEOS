@@ -1,4 +1,4 @@
-A script to watch/record videos from the catch-up TV site http://videos.arte.tv
+A script to watch/record videos from the catch-up TV site http://www.arte.tv
 
 - No flash-plugin required: just use your favorite player
 - Internet lag? just record the video and play it later.
@@ -11,7 +11,7 @@ Some videos that are restricted to a mature audience (+18) are only visible betw
 # REQUIREMENTS
 
 * python 2.7 (but not python 3)
-* beautifulsoup 3.2.1
+* beautifulsoup 4.x
 * a video player like *mplayer*, *vlc*, *xine* or *totem* to use the play command.
 Or add your own player in the script. Help is provided
 

@@ -35,9 +35,9 @@ DEFAULT_QUALITY = 'hd'
 
 import sys
 try:
-    from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
+    from bs4 import BeautifulSoup
 except ImportError:
-    print >> sys.stderr, 'Error: you need the BeautifulSoup(v3) python module'
+    print >> sys.stderr, 'Error: you need the BeautifulSoup(v4) python module'
     sys.exit(1)
 import urllib2
 from urllib import unquote, urlretrieve
@@ -168,8 +168,8 @@ class Navigator(object):
             self.stop = False
             self.results = Results(self.video_per_page)
 
-        soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
-        vid = soup.findAll('section', {'class':'result'})
+        soup = BeautifulSoup(urllib2.urlopen(url).read())
+        vid = soup.find_all('section', {'class':'result'})
         videos = []
         for v in vid:
             teaser = v.find('p', {'class':'description'}).text.replace('<br>',' ').replace('<b>...</b>', ' ')
@@ -178,7 +178,7 @@ class Navigator(object):
             videos.append(Video(page_url, title, teaser, self.options))
         self.stop = True
         if videos == []:
-            print ':: No result found'
+            print ':: No results found'
         else:
             self.results.extend(videos)
 
@@ -193,7 +193,7 @@ class Navigator(object):
         if ul == None:
             print ':: No results found'
             return
-        vid = ul.findAll('li', {'class':'video'})
+        vid = ul.find_all('li', {'class':'video'})
         videos = []
         for v in vid:
             teaser = v.find('div', {'class':'video-block ARTE_PLUS_SEVEN has-play'})['data-description']
@@ -243,13 +243,13 @@ class Navigator(object):
         try:
             print ':: Retrieving programs name'
             url = GUIDE_URL % self.options.lang
-            soup = BeautifulSoup(urllib2.urlopen(url).read(), convertEntities=BeautifulSoup.ALL_ENTITIES)
+            soup = BeautifulSoup(urllib2.urlopen(url).read())
             # get the programs
             sec = soup.find('section', {'class':'nav-clusters'})
-            lis = sec.findAll('div', {'class': 'col-xs-12 col-sm-2 cluster'})
+            lis = sec.find_all('div', {'class': 'col-xs-12 col-sm-2 cluster'})
             programs, urls = [], []
             for l in lis:
-                programs.append(l.find('span', {'class': 'ellipsis title'}).text)
+                programs.append(l.find('span', {'class': 'ellipsis title'}).text.strip())
                 urls.append(l.find('a')['href'])
             if programs != []:
                 self.programs = zip(programs, urls)
@@ -568,7 +568,7 @@ def play(video):
     player_cmd = find_player(PLAYERS)
 
     if player_cmd is not None:
-        print ':: Playing %s' % video.video_url
+        print ':: Streaming URL: %s' % video.video_url
         if video.video_url.endswith(('.mp4', '.m3u8')):
             subprocess.call(player_cmd.split(' ') + [video.video_url])
     else:
