@@ -52,7 +52,7 @@ DEFAULT_DLDIR = os.getcwd()
 PARAMS = {'hd':'SQ', 'sd':'MQ', 'ld':'LQ', 'md':'EQ', 'fr':'1', 'de':'2'}
 METHOD = {'HTTP':'HTTP_MP4', 'RTMP':'RTMP'}
 
-VIDEO_PER_PAGE = 50
+VIDEO_PER_PAGE = 900
 DOMAIN = 'http://www.arte.tv'
 DIRECT_URL = {'fr': DOMAIN + '/guide/fr/direct', 'de':DOMAIN+'/guide/de/live'}
 GUIDE_URL = DOMAIN + '/guide/%s/plus7'
@@ -125,11 +125,7 @@ class Results(object):
 
     def print_page(self, verbose=True):
         '''print list of video: title in bold with a number followed by teaser'''
-	'''print self.video_per_page'''
-	'''print len(self.__value)'''
-	'''print self.page'''
-	'''print self.video_per_page'''
-        for i in range(len(self.__value)):
+        for i in range(min(self.video_per_page, len(self.__value)-self.page*self.video_per_page)):
             nb = i+self.video_per_page*self.page
             print '%s(%d) %s'% (BOLD, nb+1, self.__value[nb].title + NC)
             if verbose:
@@ -140,7 +136,7 @@ class Navigator(object):
     def __init__(self, options):
         self.options = options
         self.programs = None
-        self.more = False
+        self.more = True
         self.last_cmd = ''
         self.npage = 1
         self.video_per_page = options.video_per_page
