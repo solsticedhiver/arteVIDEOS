@@ -80,6 +80,9 @@ class Video(object):
         print ':: Retrieving video info',
         sys.stdout.flush()
         self._video_url, self._info = get_url(self.page_url, quality=self.options.quality, lang=self.options.lang)
+        soup = BeautifulSoup(urllib2.urlopen(self.page_url).read(),"lxml")
+        self.teaser = soup.find('div', {'class':'description_short'}).find('p').text
+        self.title = soup.find('title').text
         sys.stdout.write('\r')
         sys.stdout.flush()
 
@@ -577,7 +580,7 @@ def record(video, dldir):
     os.chdir(dldir)
 
     if video.video_url.endswith('.mp4'):
-        urlretrieve(video.video_url, video.mp4)
+        urlretrieve(video.video_url, video.title.replace(' ', '_').strip()+'.mp4')
     else:
         err('Error: Did not retrieved %s' % video.video_url)
 
