@@ -127,8 +127,8 @@ class Results(object):
         self.__value.extend(p)
 
     def print_page(self, verbose=True):
-        '''print list of video: title in bold with a number followed by teaser'''
-        for i in range(min(self.video_per_page, len(self.__value)-self.page*self.video_per_page)):
+        '''print list of all videos: title in bold with a number followed by teaser'''
+        for i in range(len(self.__value)):
             nb = i+self.video_per_page*self.page
             print '%s(%d) %s'% (BOLD, nb+1, self.__value[nb].title + NC)
             if verbose:
