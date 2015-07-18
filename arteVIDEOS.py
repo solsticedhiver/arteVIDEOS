@@ -125,10 +125,10 @@ class Results(object):
 
     def print_page(self, verbose=True):
         '''print list of video: title in bold with a number followed by teaser'''
-	print self.video_per_page 
-	print len(self.__value)
-	print self.page
-	print self.video_per_page
+	'''print self.video_per_page'''
+	'''print len(self.__value)'''
+	'''print self.page'''
+	'''print self.video_per_page'''
         for i in range(len(self.__value)):
             nb = i+self.video_per_page*self.page
             print '%s(%d) %s'% (BOLD, nb+1, self.__value[nb].title + NC)
@@ -653,7 +653,7 @@ COMMANDS
     parser.add_option('-d', '--downloaddir', dest='dldir', type='string',
             default=DEFAULT_DLDIR, action='store', help='directory for downloads')
     parser.add_option('-l', '--lang', dest='lang', type='string', default=DEFAULT_LANG,
-            action='store', help=('language of the video fr, de, en (default: %s)' % DEFAULT_LANG))
+            action='store', help=('language of the video fr, de (default: %s)' % DEFAULT_LANG))
     parser.add_option('-q', '--quality', dest='quality', type='string', default=DEFAULT_QUALITY,
             action='store', help='quality of the video hd or md or sd or ld (default: hd)')
 
@@ -666,11 +666,11 @@ COMMANDS
         setattr(options, 'video_per_page', 25)
 
     if not os.path.exists(options.dldir):
-        die('Invalid Path')
-    if options.lang not in ('fr', 'de', 'en'):
-        die('Invalid option')
+        die('Invalid download directory path')
+    if options.lang not in ('fr', 'de'):
+        die('Invalid lang option')
     if options.quality not in ('sd', 'hd', 'md', 'ld'):
-        die('Invalid option')
+        die('Invalid quality option')
     if len(args) < 1:
         MyCmd(options).cmdloop()
         sys.exit(0)
