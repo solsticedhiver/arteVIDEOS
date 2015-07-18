@@ -602,9 +602,10 @@ def find_in_path(path, filename):
     return False
 
 def find_player(players):
-    for p in players:
-        cmd = p.split(' ')[0]
-        if cmd.startswith('/') and os.path.isfile(cmd):
+    players_splited = players.split(',');
+    for p in players_splited:
+        cmd = p.strip()
+        if p.startswith('/') and os.path.isfile(cmd):
             return p
         else:
             if find_in_path(os.environ['PATH'], cmd):
