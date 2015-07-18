@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 # -*- coding: utf8 -*-
 
 #             DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
@@ -21,10 +21,7 @@
 # You can add your favorite player at the beginning of the PLAYERS tuple
 # The order is significant: the first player available is used
 PLAYERS = (
-        'mplayer -really-quiet',
-        'vlc',
-        '/usr/bin/totem --enqueue', # you could use absolute path for the command too
-        'xine',
+        'vlc'
         )
 
 DEFAULT_LANG = 'fr'
@@ -127,7 +124,11 @@ class Results(object):
         self.__value.extend(p)
 
     def print_page(self, verbose=True):
-        '''print list of all videos: title in bold with a number followed by teaser'''
+        '''print list of video: title in bold with a number followed by teaser'''
+	print self.video_per_page 
+	print len(self.__value)
+	print self.page
+	print self.video_per_page
         for i in range(len(self.__value)):
             nb = i+self.video_per_page*self.page
             print '%s(%d) %s'% (BOLD, nb+1, self.__value[nb].title + NC)
@@ -168,7 +169,7 @@ class Navigator(object):
             self.stop = False
             self.results = Results(self.video_per_page)
 
-        soup = BeautifulSoup(urllib2.urlopen(url).read())
+        soup = BeautifulSoup(urllib2.urlopen(url).read(),"lxml")
         vid = soup.find_all('section', {'class':'result'})
         videos = []
         for v in vid:
@@ -188,7 +189,7 @@ class Navigator(object):
             self.stop = False
             self.results = Results(self.video_per_page)
 
-        soup = BeautifulSoup(urllib2.urlopen(url).read())
+        soup = BeautifulSoup(urllib2.urlopen(url).read(),"lxml")
         ul = soup.find('ul', {'class':'clearfix list-inline list-unstyled'})
         if ul == None:
             print ':: No results found'
@@ -243,7 +244,7 @@ class Navigator(object):
         try:
             print ':: Retrieving programs name'
             url = GUIDE_URL % self.options.lang
-            soup = BeautifulSoup(urllib2.urlopen(url).read())
+            soup = BeautifulSoup(urllib2.urlopen(url).read(),"lxml")
             # get the programs
             sec = soup.find('section', {'class':'nav-clusters'})
             lis = sec.find_all('div', {'class': 'col-xs-12 col-sm-2 cluster'})
@@ -291,7 +292,7 @@ class MyCmd(Cmd):
 
     def do_live(self, arg):
         '''Play arte live'''
-        soup = BeautifulSoup(urllib2.urlopen(DIRECT_URL[self.nav.options.lang]).read())
+        soup = BeautifulSoup(urllib2.urlopen(DIRECT_URL[self.nav.options.lang]).read(),"lxml")
         url = soup.find('div', {'class':'video-container'})['arte_vp_live-url']
         data_json = json.loads(urllib2.urlopen(url).read())
         v = Video('', '', '', '', video_url=data_json['videoJsonPlayer']['VSR']['M3U8_HQ']['url'])
@@ -539,7 +540,7 @@ def get_url(url_page, quality='hd', lang='fr', method='HTTP'):
     '''get the url of the video and info about video'''
     try:
         # get the web page
-        soup = BeautifulSoup(urllib2.urlopen(url_page).read())
+        soup = BeautifulSoup(urllib2.urlopen(url_page).read(),"lxml")
         object_tag = soup.find('div', {'class':'video-container'})
         try:
             url_json = object_tag['arte_vp_url']
@@ -696,7 +697,7 @@ COMMANDS
             MyCmd(options, nav=nav).cmdloop()
 
     elif args[0] == 'live':
-        soup = BeautifulSoup(urllib2.urlopen(DIRECT_URL[options.lang]).read())
+        soup = BeautifulSoup(urllib2.urlopen(DIRECT_URL[options.lang]).read(),"lxml")
         url = soup.find('div', {'class':'video-container'})['arte_vp_live-url']
         data_json = json.loads(urllib2.urlopen(url).read())
         v = Video('', '', '', '', video_url=data_json['videoJsonPlayer']['VSR']['M3U8_HQ']['url'])
