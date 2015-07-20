@@ -21,9 +21,12 @@
 # You can add your favorite player at the beginning of the PLAYERS tuple
 # The order is significant: the first player available is used
 PLAYERS = (
+		'mplayer -really-quiet',
         'vlc',
-		'C:/Program Files (x86)/VideoLAN/VLC/vlc.exe',
-		'C:/Program Files/VideoLAN/VLC/vlc.exe'
+		'/usr/bin/totem --enqueue', # you could use absolute path for the command too
+		'xine',
+		'C:/Program Files (x86)/VideoLAN/VLC/vlc.exe', #win32
+		'C:/Program Files/VideoLAN/VLC/vlc.exe' #win64 ?
         )
 
 DEFAULT_LANG = 'fr'
@@ -59,7 +62,7 @@ DEFAULT_DLDIR = os.getcwd()
 PARAMS = {'hd':'SQ', 'sd':'MQ', 'ld':'LQ', 'md':'EQ', 'fr':'1', 'de':'2'}
 METHOD = {'HTTP':'HTTP_MP4', 'RTMP':'RTMP'}
 
-VIDEO_PER_PAGE = 900
+VIDEO_PER_PAGE = 50
 DOMAIN = 'http://www.arte.tv'
 DIRECT_URL = {'fr': DOMAIN + '/guide/fr/direct', 'de':DOMAIN+'/guide/de/live'}
 GUIDE_URL = DOMAIN + '/guide/%s/plus7'
@@ -151,7 +154,7 @@ class Navigator(object):
     def __init__(self, options):
         self.options = options
         self.programs = None
-        self.more = True
+        self.more = False
         self.last_cmd = ''
         self.npage = 1
         self.video_per_page = options.video_per_page
