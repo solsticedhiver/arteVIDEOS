@@ -1,5 +1,5 @@
-#!/usr/bin/python
-# -*- coding: utf8 -*-
+﻿#!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 #             DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
 #                     Version 2, December 2004
@@ -42,12 +42,15 @@ import urllib2
 from urllib import unquote, urlretrieve
 import urlparse
 import os
+import platform
 import subprocess
 from optparse import OptionParser
 from cmd import Cmd
 import json
+
+
 reload(sys)
-sys.setdefaultencoding('utf-8')
+sys.setdefaultencoding("utf-8")
 
 VERSION = '0.5'
 QUALITY = ('sd', 'md', 'ld', 'hd')
@@ -66,9 +69,14 @@ SEARCH_KEYWORD = {'fr':'resultats-de-recherche', 'de':'suchergebnisse'}
 
 HIST_CMD = ('plus7', 'programs', 'search')
 
-BOLD   = '[1m'
-NC     = '[0m'    # no color
-
+BOLD   = '\033[1m'
+if platform.system()=='Windows':
+	BOLD   = '['
+	
+NC     = '\033[0m'    # no color
+if platform.system()=='Windows':
+	NC     = ']'
+	
 class Video(object):
     '''Store info about a given video'''
     def __init__(self, page_url, title, teaser, options, info=None, video_url=None):
@@ -85,8 +93,8 @@ class Video(object):
         sys.stdout.flush()
         self._video_url, self._info = get_url(self.page_url, quality=self.options.quality, lang=self.options.lang)
         soup = BeautifulSoup(urllib2.urlopen(self.page_url).read(),"lxml")
-        self.teaser = soup.find('div', {'class':'description_short'}).find('p').text
-        self.title = soup.find('title').text
+        self.teaser = soup.find('div', {'class':'description_short'}).find('p').encode("utf-8")
+        self.title = soup.find('title').text.encode("utf-8")
         sys.stdout.write('\r')
         sys.stdout.flush()
 
@@ -134,9 +142,9 @@ class Results(object):
         '''print list of video: title in bold with a number followed by teaser'''
         for i in range(min(self.video_per_page, len(self.__value)-self.page*self.video_per_page)):
             nb = i+self.video_per_page*self.page
-            print '%s(%d) %s'% (BOLD, nb+1, self.__value[nb].title.encode('utf-8') + NC)
+            print '%s(%d) %s'% (BOLD, nb+1, self.__value[nb].title.encode("utf-8") + NC)
             if verbose:
-                print '    '+ self.__value[nb].teaser.encode('utf-8')
+                print '    '+ self.__value[nb].teaser.encode("utf-8")
 
 class Navigator(object):
     '''Main object storing all info requested from server and help navigation'''
@@ -253,7 +261,7 @@ class Navigator(object):
             lis = sec.find_all('div', {'class': 'col-xs-12 col-sm-2 cluster'})
             programs, urls = [], []
             for l in lis:
-                programs.append(l.find('span', {'class': 'ellipsis title'}).text.strip().encode('utf-8'))
+                programs.append(l.find('span', {'class': 'ellipsis title'}).text.strip())
                 urls.append(l.find('a')['href'])
             if programs != []:
                 self.programs = zip(programs, urls)
@@ -340,8 +348,8 @@ class MyCmd(Cmd):
         display details about chosen video'''
         try:
             video = self.nav[arg]
-            print '%s== %s ==%s'% (BOLD, video.title, NC)
-            print video.info.encode('utf-8')
+            print '%s== %s ==%s'% (BOLD, video.title.encode("utf-8"), NC)
+            print video.info
         except ValueError:
             err('Error: wrong argument (must be an integer)')
         except IndexError:
@@ -445,7 +453,7 @@ class MyCmd(Cmd):
         # try to get them from home page
         self.nav.get_programs()
         if arg == '':
-            print '\n'.join('(%d) %s' % (i+1, self.nav.programs[i][0].encode('utf-8')) for i in range(len(self.nav.programs)))
+            print '\n'.join('(%d) %s' % (i+1, self.nav.programs[i][0].encode("utf-8")) for i in range(len(self.nav.programs)))
         else:
             try:
                 self.nav.program(arg)
@@ -584,7 +592,9 @@ def record(video, dldir):
     os.chdir(dldir)
 
     if video.video_url.endswith('.mp4'):
-        urlretrieve(video.video_url, video.title.replace(' ', '_').strip()+'.mp4')
+        import re
+        filename = re.sub('[^A-Za-z0-9.]+', '',video.title).strip()+'.mp4'
+        urlretrieve(video.video_url, filename)
     else:
         err('Error: Did not retrieved %s' % video.video_url)
 
@@ -607,12 +617,13 @@ def find_in_path(path, filename):
 def find_player(players):
     for p in players:
         cmd = p.strip()
-        print cmd
         if (cmd.startswith('/') or cmd[1] ==':') and os.path.isfile(cmd):
-            return p
+            print ':: using this player : '+ cmd
+            return cmd
         else:
             if find_in_path(os.environ['PATH'], cmd):
-                return p
+                print ':: using this player : '+ cmd
+                return cmd
     return None
 
 def get_term_size():
