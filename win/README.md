@@ -1,0 +1,1 @@
+you need to dl the whole folder and run arteVIDEOS.exe. works under win7
