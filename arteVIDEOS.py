@@ -46,6 +46,8 @@ import subprocess
 from optparse import OptionParser
 from cmd import Cmd
 import json
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 VERSION = '0.5'
 QUALITY = ('sd', 'md', 'ld', 'hd')
@@ -132,9 +134,9 @@ class Results(object):
         '''print list of video: title in bold with a number followed by teaser'''
         for i in range(min(self.video_per_page, len(self.__value)-self.page*self.video_per_page)):
             nb = i+self.video_per_page*self.page
-            print '%s(%d) %s'% (BOLD, nb+1, self.__value[nb].title + NC)
+            print '%s(%d) %s'% (BOLD, nb+1, self.__value[nb].title.encode('utf-8') + NC)
             if verbose:
-                print '    '+ self.__value[nb].teaser
+                print '    '+ self.__value[nb].teaser.encode('utf-8')
 
 class Navigator(object):
     '''Main object storing all info requested from server and help navigation'''
@@ -251,7 +253,7 @@ class Navigator(object):
             lis = sec.find_all('div', {'class': 'col-xs-12 col-sm-2 cluster'})
             programs, urls = [], []
             for l in lis:
-                programs.append(l.find('span', {'class': 'ellipsis title'}).text.strip())
+                programs.append(l.find('span', {'class': 'ellipsis title'}).text.strip().encode('utf-8'))
                 urls.append(l.find('a')['href'])
             if programs != []:
                 self.programs = zip(programs, urls)
@@ -339,7 +341,7 @@ class MyCmd(Cmd):
         try:
             video = self.nav[arg]
             print '%s== %s ==%s'% (BOLD, video.title, NC)
-            print video.info
+            print video.info.encode('utf-8')
         except ValueError:
             err('Error: wrong argument (must be an integer)')
         except IndexError:
@@ -443,7 +445,7 @@ class MyCmd(Cmd):
         # try to get them from home page
         self.nav.get_programs()
         if arg == '':
-            print '\n'.join('(%d) %s' % (i+1, self.nav.programs[i][0]) for i in range(len(self.nav.programs)))
+            print '\n'.join('(%d) %s' % (i+1, self.nav.programs[i][0].encode('utf-8')) for i in range(len(self.nav.programs)))
         else:
             try:
                 self.nav.program(arg)
