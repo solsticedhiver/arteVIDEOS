@@ -21,7 +21,9 @@
 # You can add your favorite player at the beginning of the PLAYERS tuple
 # The order is significant: the first player available is used
 PLAYERS = (
-        'vlc'
+        'vlc',
+		'C:/Program Files (x86)/VideoLAN/VLC/vlc.exe',
+		'C:/Program Files/VideoLAN/VLC/vlc.exe'
         )
 
 DEFAULT_LANG = 'fr'
@@ -601,10 +603,10 @@ def find_in_path(path, filename):
     return False
 
 def find_player(players):
-    players_splited = players.split(',');
-    for p in players_splited:
+    for p in players:
         cmd = p.strip()
-        if cmd.startswith('/') and os.path.isfile(cmd):
+        print cmd
+        if (cmd.startswith('/') or cmd[1] ==':') and os.path.isfile(cmd):
             return p
         else:
             if find_in_path(os.environ['PATH'], cmd):
