@@ -1,6 +1,5 @@
-﻿#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
+﻿#!/usr/bin/python2
+#
 #             DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
 #                     Version 2, December 2004
 #
@@ -21,12 +20,12 @@
 # You can add your favorite player at the beginning of the PLAYERS tuple
 # The order is significant: the first player available is used
 PLAYERS = (
-		'mplayer -really-quiet',
+        'mplayer -really-quiet',
         'vlc',
-		'/usr/bin/totem --enqueue', # you could use absolute path for the command too
-		'xine',
-		'C:/Program Files (x86)/VideoLAN/VLC/vlc.exe', #win32
-		'C:/Program Files/VideoLAN/VLC/vlc.exe' #win64 ?
+        '/usr/bin/totem --enqueue', # you could use absolute path for the command too
+        'xine',
+        'C:/Program Files (x86)/VideoLAN/VLC/vlc.exe', #win32
+        'C:/Program Files/VideoLAN/VLC/vlc.exe' #win64 ?
         )
 
 DEFAULT_LANG = 'fr'
@@ -67,6 +66,8 @@ DOMAIN = 'http://www.arte.tv'
 DIRECT_URL = {'fr': DOMAIN + '/guide/fr/direct', 'de':DOMAIN+'/guide/de/live'}
 GUIDE_URL = DOMAIN + '/guide/%s/plus7'
 PLUS_URL = DOMAIN + '/guide/%s/plus7?regions=ALL%%2Cdefault%%2CDE_FR%%2CSAT%%2CEUR_DE_FR'
+API_URL = DOMAIN + '/papi/tvguide/videos/plus7/program/%s/L2/ALL/ALL/-1/AIRDATE_DESC/0/0/DE_FR.json'
+LIVE_URL = DOMAIN + '/papi/tvguide/videos/livestream/%s/'
 SEARCH_URL = DOMAIN + '/guide/%s/%s?keyword=%s'
 SEARCH_KEYWORD = {'fr':'resultats-de-recherche', 'de':'suchergebnisse'}
 
@@ -82,31 +83,22 @@ if platform.system()=='Windows':
 	
 class Video(object):
     '''Store info about a given video'''
-    def __init__(self, page_url, title, teaser, options, info=None, video_url=None):
+    def __init__(self, vid, title, teaser, options, desc=None, date=None, video_url=None):
         self.title = title
-        self.page_url = page_url
+        self.vid = vid
         self.teaser = teaser
         self.options = options
-        self._info = info
+        self.desc = desc
+        self.date = date
         self._video_url = video_url
         self._mp4 = None
 
     def get_data(self):
         print ':: Retrieving video info',
         sys.stdout.flush()
-        self._video_url, self._info = get_url(self.page_url, quality=self.options.quality, lang=self.options.lang)
-        soup = BeautifulSoup(urllib2.urlopen(self.page_url).read(),"lxml")
-        self.teaser = soup.find('div', {'class':'description_short'}).find('p').encode("utf-8")
-        self.title = soup.find('title').text.encode("utf-8")
+        self._video_url = extract_url_video_json(self.vid, self.options.quality)
         sys.stdout.write('\r')
         sys.stdout.flush()
-
-    # automatic retrieval of video info if a property is not defined
-    @property
-    def info(self):
-        if self._info is None:
-            self.get_data()
-        return self._info
 
     @property
     def video_url(self):
@@ -225,7 +217,8 @@ class Navigator(object):
             self.stop = False
             self.results = Results(self.video_per_page)
         try:
-            data_json = json.loads(urllib2.urlopen(url).read())
+            data = urllib2.urlopen(url).read()
+            data_json = json.loads(data)
             videos = extract_videos(data_json, self.options)
             self.stop = True
             self.results.extend(videos)
@@ -247,7 +240,8 @@ class Navigator(object):
 
     def plus7(self):
         '''get the list of videos from url'''
-        url = PLUS_URL % self.options.lang
+        print self.options.lang
+        url = API_URL % self.options.lang[:1]
         print ':: Retrieving plus7 videos list'
         self.request(url)
 
@@ -306,10 +300,9 @@ class MyCmd(Cmd):
 
     def do_live(self, arg):
         '''Play arte live'''
-        soup = BeautifulSoup(urllib2.urlopen(DIRECT_URL[self.nav.options.lang]).read(),"lxml")
-        url = soup.find('div', {'class':'video-container'})['arte_vp_live-url']
-        data_json = json.loads(urllib2.urlopen(url).read())
-        v = Video('', '', '', '', video_url=data_json['videoJsonPlayer']['VSR']['M3U8_HQ']['url'])
+        jlive = json.loads(urllib2.urlopen(LIVE_URL % self.nav.options.lang.upper()[:1]).read())
+        print jlive['video']['VSR'][0]['VUR']
+        v = Video('', '', '', '', video_url=jlive['video']['VSR'][1]['VUR'])
         print ':: Playing Live'
         play(v)
 
@@ -352,7 +345,7 @@ class MyCmd(Cmd):
         try:
             video = self.nav[arg]
             print '%s== %s ==%s'% (BOLD, video.title.encode("utf-8"), NC)
-            print video.info
+            print video.desc+ '\n\n' + video.date
         except ValueError:
             err('Error: wrong argument (must be an integer)')
         except IndexError:
@@ -572,12 +565,22 @@ def get_url(url_page, quality='hd', lang='fr', method='HTTP'):
 def extract_videos(data_json, options):
     '''extract list of videos title, url, and teaser from data_json'''
     videos = []
-    for v in data_json['videos']:
-        title = v['title']
-        teaser = v['desc'].strip()
-        url = v['url']
-        videos.append(Video(url, title, teaser, options))
+    for v in data_json['program%sList' % options.lang.upper()]:
+        title = v['VDO']['VTI']
+        teaser = v['VDO']['V7T'].strip()
+        vid = v['VDO']['VID']
+        desc = v['VDO']['VDE'].strip()
+        date = v['VDO']['VRA']
+        videos.append(Video(vid, title, teaser, options, desc=desc, date=date))
     return videos
+
+def extract_url_video_json(vid, quality):
+    url = 'http://www.arte.tv/papi/tvguide/videos/stream/player/%s/%s/HBBTV/ALL.json' % (vid[-1:], vid)
+    json_vid = json.loads(urllib2.urlopen(url).read())
+    #f = open('test.json', 'w')
+    #f.write(json.dumps(json_vid, sort_keys=True, indent=4, separators=(',', ': ')))
+    #f.close()
+    return json_vid['videoJsonPlayer']['VSR']['HTTP_MP4_%s_1'%PARAMS[quality]]['url']
 
 def play(video):
     player_cmd = find_player(PLAYERS)
@@ -596,7 +599,7 @@ def record(video, dldir):
 
     if video.video_url.endswith('.mp4'):
         import re
-        filename = re.sub('[^A-Za-z0-9.]+', '',video.title).strip()+'.mp4'
+        filename = re.sub('[^A-Za-z0-9.]+', '_',video.title).strip()+'_'+video.vid+'.mp4'
         urlretrieve(video.video_url, filename)
     else:
         err('Error: Did not retrieved %s' % video.video_url)
@@ -619,7 +622,7 @@ def find_in_path(path, filename):
 
 def find_player(players):
     for p in players:
-        cmd = p.strip()
+        cmd = p.strip().split(' ')[0]
         if (cmd.startswith('/') or cmd[1] ==':') and os.path.isfile(cmd):
             print ':: using this player : '+ cmd
             return cmd
