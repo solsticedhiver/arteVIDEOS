@@ -1,4 +1,5 @@
 ﻿#!/usr/bin/python2
+# -*- coding: utf-8 -*-
 #
 #             DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
 #                     Version 2, December 2004
@@ -718,10 +719,9 @@ COMMANDS
             MyCmd(options, nav=nav).cmdloop()
 
     elif args[0] == 'live':
-        soup = BeautifulSoup(urllib2.urlopen(DIRECT_URL[options.lang]).read(),"lxml")
-        url = soup.find('div', {'class':'video-container'})['arte_vp_live-url']
-        data_json = json.loads(urllib2.urlopen(url).read())
-        v = Video('', '', '', '', video_url=data_json['videoJsonPlayer']['VSR']['M3U8_HQ']['url'])
+        jlive = json.loads(urllib2.urlopen(LIVE_URL % options.lang.upper()[:1]).read())
+        print jlive['video']['VSR'][0]['VUR']
+        v = Video('', '', '', '', video_url=jlive['video']['VSR'][1]['VUR'])
         print ':: Playing Live'
         play(v)
 
