@@ -62,13 +62,11 @@ DEFAULT_DLDIR = os.getcwd()
 PARAMS = {'hd':'SQ', 'sd':'MQ', 'ld':'LQ', 'md':'EQ', 'fr':'1', 'de':'2'}
 METHOD = {'HTTP':'HTTP_MP4', 'RTMP':'RTMP'}
 
-VIDEO_PER_PAGE = 50
 DOMAIN = 'http://www.arte.tv'
-DIRECT_URL = {'fr': DOMAIN + '/guide/fr/direct', 'de':DOMAIN+'/guide/de/live'}
 GUIDE_URL = DOMAIN + '/guide/%s/plus7'
-PLUS_URL = DOMAIN + '/guide/%s/plus7?regions=ALL%%2Cdefault%%2CDE_FR%%2CSAT%%2CEUR_DE_FR'
 API_URL = DOMAIN + '/papi/tvguide/videos/plus7/program/%s/L2/ALL/ALL/-1/AIRDATE_DESC/0/0/DE_FR.json'
 LIVE_URL = DOMAIN + '/papi/tvguide/videos/livestream/%s/'
+STREAM_URL = DOMAIN + '/papi/tvguide/videos/stream/player/%s/%s/HBBTV/ALL.json'
 SEARCH_URL = DOMAIN + '/guide/%s/%s?keyword=%s'
 SEARCH_KEYWORD = {'fr':'resultats-de-recherche', 'de':'suchergebnisse'}
 
@@ -576,7 +574,7 @@ def extract_videos(data_json, options):
     return videos
 
 def extract_url_video_json(vid, quality):
-    url = 'http://www.arte.tv/papi/tvguide/videos/stream/player/%s/%s/HBBTV/ALL.json' % (vid[-1:], vid)
+    url = STREAM_URL % (vid[-1:], vid)
     json_vid = json.loads(urllib2.urlopen(url).read())
     #f = open('test.json', 'w')
     #f.write(json.dumps(json_vid, sort_keys=True, indent=4, separators=(',', ': ')))
