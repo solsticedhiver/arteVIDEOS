@@ -22,10 +22,10 @@ You can show your support for this little software:
 
 # USAGE
 
-    Usage: arteVIDEOS.py url|play|record [OPTIONS] URL
-           arteVIDEOS.py search [OPTIONS] STRING...
-           arteVIDEOS.py live
-           arteVIDEOS.py
+    Usage: python2 arteVIDEOS.py url|play|record [OPTIONS] URL
+           python2 arteVIDEOS.py search [OPTIONS] STRING...
+           python2 arteVIDEOS.py live
+           python2 arteVIDEOS.py
 
     Play or record videos from arte VIDEOS website without a mandatory browser.
 

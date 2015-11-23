@@ -239,7 +239,6 @@ class Navigator(object):
 
     def plus7(self):
         '''get the list of videos from url'''
-        print self.options.lang
         url = API_URL % self.options.lang[:1]
         print ':: Retrieving plus7 videos list'
         self.request(url)
