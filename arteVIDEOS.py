@@ -50,6 +50,7 @@ import subprocess
 from optparse import OptionParser
 from cmd import Cmd
 import json
+import re
 
 
 reload(sys)
@@ -65,6 +66,7 @@ METHOD = {'HTTP':'HTTP_MP4', 'RTMP':'RTMP'}
 DOMAIN = 'http://www.arte.tv'
 GUIDE_URL = DOMAIN + '/guide/%s/plus7'
 API_URL = DOMAIN + '/papi/tvguide/videos/plus7/program/%s/L2/ALL/ALL/-1/AIRDATE_DESC/0/0/DE_FR.json'
+PROGRAM_URL = DOMAIN + '/papi/tvguide/videos/plus7/program/%s/L2/ALL/%s/-1/AIRDATE_DESC/%d/%d/DE_FR.json'
 LIVE_URL = DOMAIN + '/papi/tvguide/videos/livestream/%s/'
 STREAM_URL = DOMAIN + '/papi/tvguide/videos/stream/player/%s/%s/HBBTV/ALL.json'
 SEARCH_URL = DOMAIN + '/guide/%s/%s?keyword=%s'
@@ -188,27 +190,41 @@ class Navigator(object):
         else:
             self.results.extend(videos)
 
-    def retrieve(self, url):
+    def program(self, arg):
+        '''get a list of videos for given program'''
+        pr = int(arg) - 1
+        pid = self.programs[pr]['id']
+
         if not self.more:
             self.npage = 1
             self.stop = False
             self.results = Results(self.video_per_page)
 
-        soup = BeautifulSoup(urllib2.urlopen(url).read(),"lxml")
-        ul = soup.find('ul', {'class':'clearfix list-inline list-unstyled'})
-        if ul == None:
+        offset = len(self.results)*self.video_per_page+1
+
+        print ':: Retrieving requested program list'
+        url = PROGRAM_URL % (self.options.lang.upper()[0], pid, self.video_per_page, offset)
+        jp = json.loads(urllib2.urlopen(url).read())
+        videos = []
+        try:
+            for v in jp['program%sList' % self.options.lang.upper()]:
+                title = v['VDO']['VTI']
+                teaser = v['VDO']['V7T'].strip()
+                vid = v['VDO']['VID']
+                desc = v['VDO']['VDE'].strip()
+                date = v['VDO']['VRA']
+                videos.append(Video(vid, title, teaser, self.options, desc=desc, date=date))
+            self.stop = True
+            self.results.extend(videos)
+        except KeyError:
             print ':: No results found'
             return
-        vid = ul.find_all('li', {'class':'video'})
-        videos = []
-        for v in vid:
-            teaser = v.find('div', {'class':'video-block ARTE_PLUS_SEVEN has-play'})['data-description']
-            title = v.find('h3')['title']
-            url_json = v.find('div', {'class':'video-container'})['arte_vp_url']
-            url, info = extract_json(url_json)
-            videos.append(Video(url_json, title, teaser, self.options, info=info, video_url=url))
-        self.stop = True
-        self.results.extend(videos)
+
+    def search(self, s):
+        '''search videos matching string s'''
+        url = SEARCH_URL % (self.options.lang, SEARCH_KEYWORD[self.options.lang], s.replace(' ', '+'))
+        print ':: Waiting for search request'
+        self.parse_search(url)
 
     def request(self, url):
         if not self.more:
@@ -224,19 +240,6 @@ class Navigator(object):
         except urllib2.URLError:
             die("Can't complete request")
 
-    def program(self, arg):
-        '''get a list of videos for given program'''
-        pr = int(arg) - 1
-        url = self.programs[pr][1]
-        print ':: Retrieving requested program list'
-        self.retrieve(url)
-
-    def search(self, s):
-        '''search videos matching string s'''
-        url = SEARCH_URL % (self.options.lang, SEARCH_KEYWORD[self.options.lang], s.replace(' ', '+'))
-        print ':: Waiting for search request'
-        self.parse_search(url)
-
     def plus7(self):
         '''get the list of videos from url'''
         url = API_URL % self.options.lang[:1]
@@ -250,18 +253,18 @@ class Navigator(object):
         try:
             print ':: Retrieving programs name'
             url = GUIDE_URL % self.options.lang
-            soup = BeautifulSoup(urllib2.urlopen(url).read(),"lxml")
+            html = urllib2.urlopen(url).read()
+            self.programs = []
             # get the programs
-            sec = soup.find('section', {'class':'nav-clusters'})
-            lis = sec.find_all('div', {'class': 'col-xs-12 col-sm-2 cluster'})
-            programs, urls = [], []
-            for l in lis:
-                programs.append(l.find('span', {'class': 'ellipsis title'}).text.strip())
-                urls.append(l.find('a')['href'])
-            if programs != []:
-                self.programs = zip(programs, urls)
+            r = re.compile('.*clusters: (.*)')
+            m = r.search(html)
+            if m:
+                j = json.loads(m.group(1))
+                for p in j:
+                    self.programs.append(p)
             else:
-                self.programs = None
+                die("Can't find program list")
+
         except urllib2.URLError:
             die("Can't get the home page of arte+7")
         return None
@@ -447,7 +450,8 @@ class MyCmd(Cmd):
         # try to get them from home page
         self.nav.get_programs()
         if arg == '':
-            print '\n'.join('(%d) %s' % (i+1, self.nav.programs[i][0].encode("utf-8")) for i in range(len(self.nav.programs)))
+            print '\n'.join('(%d) %s%s%s / %s '% (i+1, BOLD, self.nav.programs[i]['title'], NC, self.nav.programs[i]['subtitle']) 
+                    for i in range(len(self.nav.programs)))
         else:
             try:
                 self.nav.program(arg)
@@ -646,10 +650,10 @@ def get_term_size():
         return None
 
 def main():
-    usage = '''Usage: %prog url|play|record [OPTIONS] URL
-       %prog search [OPTIONS] STRING...
-       %prog live
-       %prog
+    usage = '''Usage: python2 %prog url|play|record [OPTIONS] URL
+       python2 %prog search [OPTIONS] STRING...
+       python2 %prog live
+       python2 %prog
 
 Play or record videos from arte VIDEOS website without a mandatory browser.
 
