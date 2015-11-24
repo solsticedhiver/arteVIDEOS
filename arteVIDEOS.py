@@ -69,8 +69,7 @@ API_URL = DOMAIN + '/papi/tvguide/videos/plus7/program/%s/L2/ALL/ALL/-1/AIRDATE_
 PROGRAM_URL = DOMAIN + '/papi/tvguide/videos/plus7/program/%s/L2/ALL/%s/-1/AIRDATE_DESC/%d/%d/DE_FR.json'
 LIVE_URL = DOMAIN + '/papi/tvguide/videos/livestream/%s/'
 STREAM_URL = DOMAIN + '/papi/tvguide/videos/stream/player/%s/%s/HBBTV/ALL.json'
-SEARCH_URL = DOMAIN + '/guide/%s/%s?keyword=%s'
-SEARCH_KEYWORD = {'fr':'resultats-de-recherche', 'de':'suchergebnisse'}
+SEARCH_URL = DOMAIN + '/guide/%s/search?q=%s&scope=plus7&zone=europe'
 
 HIST_CMD = ('plus7', 'programs', 'search')
 
@@ -89,7 +88,7 @@ class Video(object):
         self.vid = vid
         self.teaser = teaser
         self.options = options
-        self.desc = desc
+        self._desc = desc
         self.date = date
         self._video_url = video_url
         self._mp4 = None
@@ -106,6 +105,22 @@ class Video(object):
         if self._video_url is None:
             self.get_data()
         return self._video_url
+
+    @property
+    def desc(self):
+        if self._desc is None:
+            url = DOMAIN + '/papi/tvguide/videos/stream/player/%s/%s_PLUS7-%s/HBBTV/ALL.json'
+            u = url % (self.options.lang.upper()[0], self.vid[:-2], self.options.lang.upper()[0])
+            try:
+                js = json.loads(urllib2.urlopen(u).read())
+            except urllib2.HTTPError:
+                die("Can't find video in database")
+            desc = js['videoJsonPlayer']['VDE'].strip()
+            self.date = js['videoJsonPlayer']['VRA']
+            self._video_url = js['videoJsonPlayer']['VSR']['HTTP_MP4_%s_1'%PARAMS[self.options.quality]]['url']
+            return desc
+        else:
+            return self._desc
 
     @property
     def mp4(self):
@@ -170,26 +185,6 @@ class Navigator(object):
         if len(self.results) == 0:
             err('You need to run either a plus7, search or program command first')
 
-    def parse_search(self, url):
-        if not self.more:
-            self.npage = 1
-            self.stop = False
-            self.results = Results(self.video_per_page)
-
-        soup = BeautifulSoup(urllib2.urlopen(url).read(),"lxml")
-        vid = soup.find_all('section', {'class':'result'})
-        videos = []
-        for v in vid:
-            teaser = v.find('p', {'class':'description'}).text.replace('<br>',' ').replace('<b>...</b>', ' ')
-            title = v.find('h3')['title']
-            page_url = v.find('a')['href']
-            videos.append(Video(page_url, title, teaser, self.options))
-        self.stop = True
-        if videos == []:
-            print ':: No results found'
-        else:
-            self.results.extend(videos)
-
     def program(self, arg):
         '''get a list of videos for given program'''
         pr = int(arg) - 1
@@ -222,9 +217,30 @@ class Navigator(object):
 
     def search(self, s):
         '''search videos matching string s'''
-        url = SEARCH_URL % (self.options.lang, SEARCH_KEYWORD[self.options.lang], s.replace(' ', '+'))
+        if not self.more:
+            self.npage = 1
+            self.stop = False
+            self.results = Results(self.video_per_page)
+
         print ':: Waiting for search request'
-        self.parse_search(url)
+        url = SEARCH_URL % (self.options.lang, s.replace(' ', '%20'))
+        html = urllib2.urlopen(url).read()
+        r = re.compile('.*results: (.*)')
+        m = r.search(html)
+        s = []
+        if m:
+            j = json.loads(m.group(1).strip(','))
+            for res in j['programs']:
+                print res
+                v = Video(res['id'], res['title'], res['description'].strip('\n'), self.options)
+                s.append(v)
+        else:
+            die("Can't find program list")
+        self.stop = True
+        if s == []:
+            print ':: No results found'
+        else:
+            self.results.extend(s)
 
     def request(self, url):
         if not self.more:
