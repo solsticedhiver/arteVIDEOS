@@ -11,7 +11,6 @@ Some videos that are restricted to a mature audience (+18) are only visible betw
 # REQUIREMENTS
 
 * python 2.7 (but not python 3)
-* beautifulsoup 4.x
 * a video player like *mplayer*, *vlc*, *xine* or *totem* to use the play command.
 Or add your own player in the script. Help is provided
 

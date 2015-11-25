@@ -36,11 +36,6 @@ DEFAULT_QUALITY = 'hd'
 ########################################################################
 
 import sys
-try:
-    from bs4 import BeautifulSoup
-except ImportError:
-    print >> sys.stderr, 'Error: you need the BeautifulSoup(v4) python module'
-    sys.exit(1)
 import urllib2
 from urllib import unquote, urlretrieve
 import urlparse
@@ -109,10 +104,10 @@ class Video(object):
     @property
     def desc(self):
         if self._desc is None:
-            url = DOMAIN + '/papi/tvguide/videos/stream/player/%s/%s_PLUS7-%s/HBBTV/ALL.json'
-            u = url % (self.options.lang.upper()[0], self.vid[:-2], self.options.lang.upper()[0])
+            vid = '%s_PLUS7-%s' % (self.vid[:-2], self.options.lang.upper()[0])
+            url = STREAM_URL % (self.options.lang.upper()[0], vid)
             try:
-                js = json.loads(urllib2.urlopen(u).read())
+                js = json.loads(urllib2.urlopen(url).read())
             except urllib2.HTTPError:
                 die("Can't find video in database")
             desc = js['videoJsonPlayer']['VDE'].strip()
@@ -231,7 +226,6 @@ class Navigator(object):
         if m:
             j = json.loads(m.group(1).strip(','))
             for res in j['programs']:
-                print res
                 v = Video(res['id'], res['title'], res['description'].strip('\n'), self.options)
                 s.append(v)
         else:
@@ -564,17 +558,8 @@ def extract_json(url_json, quality='hd', lang='fr', method='HTTP'):
 def get_url(url_page, quality='hd', lang='fr', method='HTTP'):
     '''get the url of the video and info about video'''
     try:
-        # get the web page
-        soup = BeautifulSoup(urllib2.urlopen(url_page).read(),"lxml")
-        object_tag = soup.find('div', {'class':'video-container'})
-        try:
-            url_json = object_tag['arte_vp_url']
-        except KeyError:
-            die('Video url not found')
-        if not url_json.endswith('ALL.json'):
-            # go one step further to really get all the data for the video
-            data_json = json.loads(urllib2.urlopen(url_json).read())
-            url_json = data_json['videoJsonPlayer']['videoPlayerUrl']
+        vid = '%s_PLUS7-%s' % (url_page.split('/')[-2][:-2], lang.upper()[0])
+        url_json = STREAM_URL % (lang.upper()[0], vid)
         (video_url, info) = extract_json(url_json, quality, lang, method)
         return (video_url, info)
     except urllib2.URLError:
