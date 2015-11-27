@@ -78,12 +78,13 @@ if platform.system()=='Windows':
 	
 class Video(object):
     '''Store info about a given video'''
-    def __init__(self, vid, title, teaser, options, desc=None, date=None, video_url=None):
+    def __init__(self, vid, title, teaser, options, desc=None, date=None, infoprog=None, video_url=None):
         self.title = title
         self.vid = vid
         self.teaser = teaser
         self.options = options
         self._desc = desc
+        self.infoprog = infoprog
         self.date = date
         self._video_url = video_url
         self._mp4 = None
@@ -112,6 +113,7 @@ class Video(object):
                 die("Can't find video in database")
             desc = js['videoJsonPlayer']['VDE'].strip()
             self.date = js['videoJsonPlayer']['VRA']
+            self.infoprog = js['videoJsonPlayer']['infoProg']
             self._video_url = js['videoJsonPlayer']['VSR']['HTTP_MP4_%s_1'%PARAMS[self.options.quality]]['url']
             return desc
         else:
@@ -203,7 +205,8 @@ class Navigator(object):
                 vid = v['VDO']['VID']
                 desc = v['VDO']['VDE'].strip()
                 date = v['VDO']['VRA']
-                videos.append(Video(vid, title, teaser, self.options, desc=desc, date=date))
+                infoprog = v['VDO']['infoProg']
+                videos.append(Video(vid, title, teaser, self.options, desc=desc, date=date, infoprog=infoprog))
             self.stop = True
             self.results.extend(videos)
         except KeyError:
@@ -356,7 +359,7 @@ class MyCmd(Cmd):
         try:
             video = self.nav[arg]
             print '%s== %s ==%s'% (BOLD, video.title.encode("utf-8"), NC)
-            print video.desc+ '\n\n' + video.date
+            print video.desc+ '\n\n' + video.date + '\n' + video.infoprog
         except ValueError:
             err('Error: wrong argument (must be an integer)')
         except IndexError:
@@ -574,7 +577,8 @@ def extract_videos(data_json, options):
         vid = v['VDO']['VID']
         desc = v['VDO']['VDE'].strip()
         date = v['VDO']['VRA']
-        videos.append(Video(vid, title, teaser, options, desc=desc, date=date))
+        infoprog = v['VDO']['infoProg']
+        videos.append(Video(vid, title, teaser, options, desc=desc, date=date, infoprog=infoprog))
     return videos
 
 def extract_url_video_json(vid, quality):
