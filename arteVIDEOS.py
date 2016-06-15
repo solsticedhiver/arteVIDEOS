@@ -570,7 +570,10 @@ def extract_videos(data_json, options):
     videos = []
     for v in data_json['program%sList' % options.lang.upper()]:
         title = v['VDO']['VTI']
-        teaser = v['VDO']['V7T'].strip()
+        if 'V7T' in v['VDO'].keys():
+            teaser = v['VDO']['V7T'].strip()
+        else:
+            teaser = "No description"
         vid = v['VDO']['VID']
         desc = v['VDO']['VDE'].strip()
         date = v['VDO']['VRA']
