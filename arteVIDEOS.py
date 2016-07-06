@@ -63,6 +63,7 @@ GUIDE_URL = DOMAIN + '/guide/%s/plus7'
 API_URL = DOMAIN + '/papi/tvguide/videos/plus7/program/%s/L2/ALL/ALL/-1/AIRDATE_DESC/0/0/DE_FR.json'
 PROGRAM_URL = DOMAIN + '/papi/tvguide/videos/plus7/program/%s/L2/ALL/%s/-1/AIRDATE_DESC/%d/%d/DE_FR.json'
 LIVE_URL = DOMAIN + '/papi/tvguide/videos/livestream/%s/'
+VIDEO_URL = DOMAIN + '/guide/%s/'
 STREAM_URL = DOMAIN + '/papi/tvguide/videos/stream/player/%s/%s/HBBTV/ALL.json'
 SEARCH_URL = DOMAIN + '/guide/%s/search?q=%s&scope=plus7&zone=europe'
 
@@ -573,7 +574,10 @@ def extract_videos(data_json, options):
     videos = []
     for v in data_json['program%sList' % options.lang.upper()]:
         title = v['VDO']['VTI']
-        teaser = v['VDO']['V7T'].strip()
+        if 'V7T' in v['VDO'].keys():
+            teaser = v['VDO']['V7T'].strip()
+        else:
+            teaser = "No description"
         vid = v['VDO']['VID']
         desc = v['VDO']['VDE'].strip()
         date = v['VDO']['VRA']
@@ -712,7 +716,9 @@ COMMANDS
         sys.exit(1)
 
     elif args[0] == 'record':
-        record(Video(args[1], '', '', options), options.dldir)
+        vid, stripped = args[1][len(VIDEO_URL):len(args[1])].split('/')
+        vid = '%s_PLUS7-%s' % (vid[:-2], options.lang.upper()[0])
+        record(Video(vid, '', '', options), options.dldir)
 
     elif args[0] == 'search':
         term = ' '.join(args[1:])
