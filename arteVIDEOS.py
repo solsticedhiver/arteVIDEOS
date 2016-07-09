@@ -65,7 +65,7 @@ PROGRAM_URL = DOMAIN + '/papi/tvguide/videos/plus7/program/%s/L2/ALL/%s/-1/AIRDA
 LIVE_URL = DOMAIN + '/papi/tvguide/videos/livestream/%s/'
 VIDEO_URL = DOMAIN + '/guide/%s/'
 STREAM_URL = DOMAIN + '/papi/tvguide/videos/stream/player/%s/%s/HBBTV/ALL.json'
-SEARCH_URL = DOMAIN + '/guide/%s/search?q=%s&scope=plus7&zone=europe'
+SEARCH_URL = DOMAIN + '/guide/%s/programs?q=%s&scope=plus7&page=1&limit=15'
 
 HIST_CMD = ('plus7', 'programs', 'search')
 
@@ -91,9 +91,9 @@ class Video(object):
         self._mp4 = None
 
     def get_data(self):
-        print ':: Retrieving video info',
+        print ':: Retrieving video url info',
         sys.stdout.flush()
-        self._video_url = extract_url_video_json(self.vid, self.options.quality)
+        self._video_url = extract_url_video_json(self.vid, self.options.quality, self.options.lang)
         sys.stdout.write('\r')
         sys.stdout.flush()
 
@@ -223,17 +223,11 @@ class Navigator(object):
 
         print ':: Waiting for search request'
         url = SEARCH_URL % (self.options.lang, s.replace(' ', '%20'))
-        html = urllib2.urlopen(url).read()
-        r = re.compile('.*results: (.*)')
-        m = r.search(html)
+        j = json.loads(urllib2.urlopen(url).read())
         s = []
-        if m:
-            j = json.loads(m.group(1).strip(','))
-            for res in j['programs']:
-                v = Video(res['id'], res['title'], res['description'].strip('\n'), self.options)
-                s.append(v)
-        else:
-            die("Can't find program list")
+        for res in j['programs']:
+            v = Video(res['id'], res['title'], res['description'].strip('\n'), self.options)
+            s.append(v)
         self.stop = True
         if s == []:
             print ':: No results found'
@@ -577,7 +571,7 @@ def extract_videos(data_json, options):
         if 'V7T' in v['VDO'].keys():
             teaser = v['VDO']['V7T'].strip()
         else:
-            teaser = "No description"
+            teaser = "No teaser"
         vid = v['VDO']['VID']
         desc = v['VDO']['VDE'].strip()
         date = v['VDO']['VRA']
@@ -585,8 +579,9 @@ def extract_videos(data_json, options):
         videos.append(Video(vid, title, teaser, options, desc=desc, date=date, infoprog=infoprog))
     return videos
 
-def extract_url_video_json(vid, quality):
-    url = STREAM_URL % (vid[-1:], vid)
+def extract_url_video_json(vid, quality, lang):
+    nvid = '%s_PLUS7-%s' % (vid[:-2], lang.upper()[0])
+    url = STREAM_URL % (lang.upper()[0], nvid)
     json_vid = json.loads(urllib2.urlopen(url).read())
     #f = open('test.json', 'w')
     #f.write(json.dumps(json_vid, sort_keys=True, indent=4, separators=(',', ': ')))
