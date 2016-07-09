@@ -204,7 +204,10 @@ class Navigator(object):
                 title = v['VDO']['VTI']
                 teaser = v['VDO']['V7T'].strip()
                 vid = v['VDO']['VID']
-                desc = v['VDO']['VDE'].strip()
+		if 'VDE' not in v['VDO']:
+			desc = ''
+		else:
+			desc = v['VDO']['VDE'].strip()
                 date = v['VDO']['VRA']
                 infoprog = v['VDO']['infoProg']
                 videos.append(Video(vid, title, teaser, self.options, desc=desc, date=date, infoprog=infoprog))
@@ -573,7 +576,10 @@ def extract_videos(data_json, options):
         else:
             teaser = "No teaser"
         vid = v['VDO']['VID']
-        desc = v['VDO']['VDE'].strip()
+	if 'VDE' not in v['VDO']:
+		desc = ''
+	else:
+		desc = v['VDO']['VDE'].strip()
         date = v['VDO']['VRA']
         infoprog = v['VDO']['infoProg']
         videos.append(Video(vid, title, teaser, options, desc=desc, date=date, infoprog=infoprog))
