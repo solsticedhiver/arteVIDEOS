@@ -60,7 +60,7 @@ METHOD = {'HTTP':'HTTP_MP4', 'RTMP':'RTMP'}
 
 DOMAIN = 'http://www.arte.tv'
 GUIDE_URL = DOMAIN + '/guide/%s/plus7'
-API_URL = DOMAIN + '/papi/tvguide/videos/plus7/program/%s/L2/ALL/ALL/-1/AIRDATE_DESC/0/0/DE_FR.json'
+API_URL = DOMAIN + '/guide/%s/plus7/videos?page=1&isLoading=true&limit=50&sort=newest'
 PROGRAM_URL = DOMAIN + '/papi/tvguide/videos/plus7/program/%s/L2/ALL/%s/-1/AIRDATE_DESC/%d/%d/DE_FR.json'
 LIVE_URL = DOMAIN + '/papi/tvguide/videos/livestream/%s/'
 VIDEO_URL = DOMAIN + '/guide/%s/'
@@ -245,6 +245,7 @@ class Navigator(object):
         try:
             data = urllib2.urlopen(url).read()
             data_json = json.loads(data)
+            print data_json
             videos = extract_videos(data_json, self.options)
             self.stop = True
             self.results.extend(videos)
@@ -253,7 +254,7 @@ class Navigator(object):
 
     def plus7(self):
         '''get the list of videos from url'''
-        url = API_URL % self.options.lang[:1]
+        url = API_URL % self.options.lang
         print ':: Retrieving plus7 videos list'
         self.request(url)
 
@@ -569,20 +570,8 @@ def get_url(url_page, quality='hd', lang='fr', method='HTTP'):
 def extract_videos(data_json, options):
     '''extract list of videos title, url, and teaser from data_json'''
     videos = []
-    for v in data_json['program%sList' % options.lang.upper()]:
-        title = v['VDO']['VTI']
-        if 'V7T' in v['VDO'].keys():
-            teaser = v['VDO']['V7T'].strip()
-        else:
-            teaser = "No teaser"
-        vid = v['VDO']['VID']
-	if 'VDE' not in v['VDO']:
-		desc = ''
-	else:
-		desc = v['VDO']['VDE'].strip()
-        date = v['VDO']['VRA']
-        infoprog = v['VDO']['infoProg']
-        videos.append(Video(vid, title, teaser, options, desc=desc, date=date, infoprog=infoprog))
+    for v in data_json['videos']:
+        videos.append(Video(v['id'], v['title'], v['teaser'], options))
     return videos
 
 def extract_url_video_json(vid, quality, lang):
