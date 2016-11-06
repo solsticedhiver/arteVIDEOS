@@ -21,7 +21,7 @@
 # You can add your favorite player at the beginning of the PLAYERS tuple
 # The order is significant: the first player available is used
 PLAYERS = (
-        'mplayer -really-quiet',
+        'mpv',
         'vlc',
         '/usr/bin/totem --enqueue', # you could use absolute path for the command too
         'xine',
@@ -271,7 +271,7 @@ class Navigator(object):
             r = re.compile('.*clusters: (.*)')
             m = r.search(html)
             if m:
-                j = json.loads(m.group(1))
+                j = json.loads(m.group(1).strip(','))
                 for p in j:
                     self.programs.append(p)
             else:
@@ -314,8 +314,8 @@ class MyCmd(Cmd):
     def do_live(self, arg):
         '''Play arte live'''
         jlive = json.loads(urllib2.urlopen(LIVE_URL % self.nav.options.lang.upper()[:1]).read())
-        print jlive['video']['VSR'][0]['VUR']
-        v = Video('', '', '', '', video_url=jlive['video']['VSR'][1]['VUR'])
+        print jlive['video']['VSR']
+        v = Video('', '', '', '', video_url=jlive['video']['VSR'][0]['VUR'])
         print ':: Playing Live'
         play(v)
 
